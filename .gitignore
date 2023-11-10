@@ -2,3 +2,5 @@ lru_cache
 build
 compile_commands.json
 traces
+
+.cache
