@@ -43,6 +43,7 @@ public:
   const value_t &get(const key_t &key) {
     auto it = _cache_items_map.find(key);
     if (it == _cache_items_map.end()) {
+      ++_miss;
       put(key, _storage.at(key));
       return get(key);
     } else {
@@ -58,11 +59,14 @@ public:
 
   size_t size() const { return _cache_items_map.size(); }
 
+  size_t get_miss() const { return _miss; }
+
 private:
   std::list<key_value_pair_t> _cache_items_list;
   std::unordered_map<key_t, list_iterator_t> _cache_items_map;
   size_t _max_size;
   std::unordered_map<key_t, value_t> _storage;
+  size_t _miss = 0;
 };
 
 } // namespace cache

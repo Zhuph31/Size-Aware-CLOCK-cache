@@ -1,8 +1,26 @@
 #pragma once
+#include <chrono>
 #include <random>
 #include <string>
 
-std::string generateRandomString() {
+class TimeCost {
+public:
+  // 构造函数，记录当前时间
+  TimeCost() : start_time(std::chrono::high_resolution_clock::now()) {}
+
+  // 获取自构造以来经过的毫秒数
+  long long get_elapsed() const {
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        end_time - start_time);
+    return duration.count();
+  }
+
+private:
+  std::chrono::high_resolution_clock::time_point start_time;
+};
+
+inline std::string generateRandomString() {
   // 定义字符集
   const std::string charset =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

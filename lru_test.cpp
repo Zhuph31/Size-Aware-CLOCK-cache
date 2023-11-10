@@ -27,20 +27,20 @@ void init_storage() {
   printf("generated storage, size:%ld\n", FLAGS_storage_size);
 }
 
-void test_basic_lru() {
-  /**Creates cache with maximum size of three. When the
-     size in achieved every next element will replace the
-     least recently used one */
+std::pair<size_t, long long>
+test_basic_lru(const std::vector<key_type> &test_keys) {
   cache::lru_cache<std::string, std::string> cache(FLAGS_cache_size, storage);
+  TimeCost tc;
 
-  const std::string &from_cache = cache.get("two");
+  for (const key_type &each : test_keys) {
+    cache.get(each);
+  }
+
+  return {cache.get_miss(), tc.get_elapsed()};
 }
 
-int main(int argc, char *argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-  init_storage();
-
+std::pair<size_t, long long>
+test_clock_lru(const std::vector<key_type> &test_keys) {
   int miss = 0;
   auto read_miss = [&](key_type key) {
     ++miss;
@@ -52,13 +52,18 @@ int main(int argc, char *argv[]) {
   };
   LruClockCache<key_type, value_type> cache(FLAGS_cache_size, read_miss,
                                             write_miss);
-  printf("inited\n");
-  for (int i = 0; i < FLAGS_iterations; ++i) {
-    int offset = std::rand() % keys.size();
-    // prinf("offset:%d, size:%lu\n", offset, keys.size());
-    cache.get(keys[offset]);
+
+  TimeCost tc;
+  for (const key_type &each : test_keys) {
+    cache.get(each);
   }
-  printf("%ld iteration, %d miss\n", FLAGS_iterations, miss);
+  return {miss, tc.get_elapsed()};
+}
+
+int main(int argc, char *argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+  init_storage();
 
   return 0;
 }
