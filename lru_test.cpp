@@ -3,12 +3,14 @@
 #include <unordered_set>
 
 #include "LruClockCache/LruClockCache.h"
+#include "MyClock/MyClock.h"
 #include "basic_lru/lrucache.hpp"
 #include "utils.h"
 
 DEFINE_int64(storage_size, 10000, "");
 DEFINE_int64(iterations, 10000, "");
 DEFINE_int64(cache_size, 1000, "");
+DEFINE_double(alpha, 0.2, "");
 
 using key_type = std::string;
 using value_type = std::string;
@@ -58,6 +60,26 @@ std::pair<size_t, long long> test_clock_lru() {
   return {miss, tc.get_elapsed()};
 }
 
+std::pair<size_t, long long> test_my_clock() {
+  int miss = 0;
+  auto read_miss = [&](key_type key) {
+    ++miss;
+    return storage.at(key);
+  };
+  auto write_miss = [&](key_type key, value_type value) {
+    storage[key] = value;
+    exit(-1);
+  };
+  MyClockCache<key_type, value_type> cache(FLAGS_alpha, FLAGS_cache_size,
+                                           read_miss, write_miss);
+
+  TimeCost tc;
+  for (const key_type &each : test_keys) {
+    cache.get(each);
+  }
+  return {miss, tc.get_elapsed()};
+}
+
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
@@ -70,6 +92,8 @@ int main(int argc, char *argv[]) {
   printf("basic lru, miss:%lu, cost:%lld\n", miss, cost);
   std::tie(miss, cost) = test_clock_lru();
   printf("clock lru, miss:%lu, cost:%lld\n", miss, cost);
+  std::tie(miss, cost) = test_my_clock();
+  printf("my lru, miss:%lu, cost:%lld\n", miss, cost);
 
   return 0;
 }
