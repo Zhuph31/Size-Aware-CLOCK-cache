@@ -61,6 +61,8 @@ public:
       keyBuffer.push_back(LruKey());
     }
     mapping.reserve(numElements);
+
+    shouldAdopt = [](size_t) { return true; };
   }
 
   // get element from cache
@@ -233,14 +235,16 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
-          mapping.erase(keyBuffer[ctrFound]);
-          valueMemUsage -= valueBuffer[ctrFound].size();
-          valueMemUsage += loadedData.size();
-          valueBuffer[ctrFound] = loadedData;
-          chanceToSurviveBuffer[ctrFound] = 0;
+          if (shouldAdopt(loadedData.size())) {
+            mapping.erase(keyBuffer[ctrFound]);
+            valueMemUsage -= valueBuffer[ctrFound].size();
+            valueMemUsage += loadedData.size();
+            valueBuffer[ctrFound] = loadedData;
+            chanceToSurviveBuffer[ctrFound] = 0;
 
-          mapping.emplace(key, ctrFound);
-          keyBuffer[ctrFound] = key;
+            mapping.emplace(key, ctrFound);
+            keyBuffer[ctrFound] = key;
+          }
 
           return loadedData;
         } else /* "set" */
@@ -264,14 +268,16 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
-          mapping.erase(keyBuffer[ctrFound]);
-          valueMemUsage -= valueBuffer[ctrFound].size();
-          valueMemUsage += loadedData.size();
-          valueBuffer[ctrFound] = loadedData;
-          chanceToSurviveBuffer[ctrFound] = 0;
+          if (shouldAdopt(loadedData.size())) {
+            mapping.erase(keyBuffer[ctrFound]);
+            valueMemUsage -= valueBuffer[ctrFound].size();
+            valueMemUsage += loadedData.size();
+            valueBuffer[ctrFound] = loadedData;
+            chanceToSurviveBuffer[ctrFound] = 0;
 
-          mapping.emplace(key, ctrFound);
-          keyBuffer[ctrFound] = key;
+            mapping.emplace(key, ctrFound);
+            keyBuffer[ctrFound] = key;
+          }
 
           return loadedData;
         } else // "set"
@@ -288,6 +294,9 @@ public:
       }
     }
   }
+
+protected:
+  std::function<bool(size_t)> shouldAdopt;
 
 private:
   const ClockHandInteger size;

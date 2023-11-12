@@ -49,7 +49,12 @@ public:
                const std::function<LruValue(LruKey)> &readMiss,
                const std::function<void(LruKey, LruValue)> &writeMiss)
       : threshold_(alpha), LruClockCache<LruKey, LruValue, ClockHandInteger>(
-                               numElements, memLimit, readMiss, writeMiss) {}
+                               numElements, memLimit, readMiss, writeMiss) {
+
+    this->shouldAdopt = [this](size_t size) {
+      return threshold_.get_threshold() >= size;
+    };
+  }
 
   // inline const LruValue get(const LruKey &key) noexcept {
   inline const LruValue get(const LruKey &key) noexcept override {
