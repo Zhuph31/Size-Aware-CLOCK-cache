@@ -13,8 +13,10 @@
 DEFINE_int64(storage_size, 10000, "");
 DEFINE_int64(iterations, 10000, "");
 DEFINE_int64(cache_size, 1000, "");
+DEFINE_int64(cache_mem_limit, 1073741824, "");
 DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
+DEFINE_bool(real, false, "");
 
 using key_type = std::string;
 using value_type = std::string;
@@ -93,14 +95,17 @@ void init_storage() {
       ++count;
       row.debug();
     }
-    storage[row.cache_key.key] = "true";
+    std::string value =
+        FLAGS_real ? std::string(row.cache_key.length, 'a') : "true";
+    storage[row.cache_key.key] = value;
   }
 
   printf("generated storage, size:%ld\n", rows.size());
 }
 
 std::pair<size_t, long long> test_basic_lru() {
-  cache::lru_cache<key_type, value_type> cache(FLAGS_cache_size, storage);
+  cache::lru_cache<key_type, value_type> cache(FLAGS_cache_size,
+                                               FLAGS_cache_mem_limit, storage);
 
   TimeCost tc;
   for (const Row &row : rows) {

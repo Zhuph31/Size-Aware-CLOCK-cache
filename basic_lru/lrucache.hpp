@@ -20,8 +20,9 @@ public:
   typedef typename std::pair<key_t, value_t> key_value_pair_t;
   typedef typename std::list<key_value_pair_t>::iterator list_iterator_t;
 
-  lru_cache(size_t max_size, const std::unordered_map<key_t, value_t> &storage)
-      : _max_size(max_size), _storage(storage) {}
+  lru_cache(size_t max_size, size_t max_mem_size,
+            const std::unordered_map<key_t, value_t> &storage)
+      : _max_size(max_size), _max_mem_size(max_mem_size), _storage(storage) {}
 
   void put(const key_t &key, const value_t &value) {
     auto it = _cache_items_map.find(key);
@@ -32,9 +33,13 @@ public:
     }
     _cache_items_map[key] = _cache_items_list.begin();
 
-    if (_cache_items_map.size() > _max_size) {
+    _current_mem_size += value.size();
+
+    while (_cache_items_map.size() > _max_size ||
+           _current_mem_size > _max_mem_size) {
       auto last = _cache_items_list.end();
       last--;
+      _current_mem_size -= last->second.size();
       _cache_items_map.erase(last->first);
       _cache_items_list.pop_back();
     }
@@ -65,6 +70,8 @@ private:
   std::list<key_value_pair_t> _cache_items_list;
   std::unordered_map<key_t, list_iterator_t> _cache_items_map;
   size_t _max_size;
+  size_t _max_mem_size;
+  size_t _current_mem_size = 0; // total mem size of the current values
   std::unordered_map<key_t, value_t> _storage;
   size_t _miss = 0;
 };
