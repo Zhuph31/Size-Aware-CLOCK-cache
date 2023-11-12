@@ -125,8 +125,8 @@ std::pair<size_t, long long> test_clock_lru() {
     storage[key] = value;
     exit(-1);
   };
-  LruClockCache<key_type, value_type> cache(FLAGS_cache_size, read_miss,
-                                            write_miss);
+  LruClockCache<key_type, value_type> cache(
+      FLAGS_cache_size, FLAGS_cache_mem_limit, read_miss, write_miss);
 
   TimeCost tc;
   for (const Row &row : rows) {

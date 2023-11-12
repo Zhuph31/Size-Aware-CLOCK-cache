@@ -42,7 +42,8 @@ public:
   LruClockCache(ClockHandInteger numElements, ClockHandInteger memLimit,
                 const std::function<LruValue(LruKey)> &readMiss,
                 const std::function<void(LruKey, LruValue)> &writeMiss)
-      : size(numElements), loadData(readMiss), saveData(writeMiss) {
+      : size(numElements), memLimit(memLimit), loadData(readMiss),
+        saveData(writeMiss) {
     ctr = 0;
     // 50% phase difference between eviction and second-chance hands of the
     // "second-chance" CLOCK algorithm
@@ -68,7 +69,9 @@ public:
   // then returns the result to user
   // then cache is available from RAM on next get/set access with same key
   inline const LruValue get(const LruKey &key) noexcept {
-    return accessClock2Hand(key, nullptr);
+    LruValue ret = accessClock2Hand(key, nullptr);
+    controlMemUsage();
+    return ret;
   }
 
   // only syntactic difference
