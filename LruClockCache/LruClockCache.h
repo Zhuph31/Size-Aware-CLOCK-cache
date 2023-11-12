@@ -68,7 +68,7 @@ public:
   // then cache gets data from backing-store
   // then returns the result to user
   // then cache is available from RAM on next get/set access with same key
-  inline const LruValue get(const LruKey &key) noexcept {
+  inline virtual const LruValue get(const LruKey &key) noexcept {
     LruValue ret = accessClock2Hand(key, nullptr);
     controlMemUsage();
     return ret;

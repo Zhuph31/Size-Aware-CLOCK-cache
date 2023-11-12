@@ -147,7 +147,8 @@ std::pair<size_t, long long> test_my_clock() {
     exit(-1);
   };
   MyClockCache<key_type, value_type> cache(FLAGS_alpha, FLAGS_cache_size,
-                                           read_miss, write_miss);
+                                           FLAGS_cache_mem_limit, read_miss,
+                                           write_miss);
 
   TimeCost tc;
   for (const Row &row : rows) {
