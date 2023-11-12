@@ -9,6 +9,7 @@
 #define LRUCLOCKCACHE_H_
 
 #include <algorithm>
+#include <cstdlib>
 #include <functional>
 #include <mutex>
 #include <unordered_map>
@@ -125,6 +126,49 @@ public:
     }
   }
 
+  void controlMemUsage() {
+    while (valueMemUsage > memLimit) {
+      long long ctrFound = -1;
+      LruValue oldValue;
+      LruKey oldKey;
+      while (ctrFound == -1) {
+        // second-chance hand lowers the "chance" status down if its 1 but
+        // slot is saved from eviction 1 more chance to be in a cache-hit
+        // until eviction-hand finds this
+        if (chanceToSurviveBuffer[ctr] > 0) {
+          chanceToSurviveBuffer[ctr] = 0;
+        }
+
+        // circular buffer has no bounds
+        ctr++;
+        if (ctr >= size) {
+          ctr = 0;
+        }
+
+        // unlucky slot is selected for eviction by eviction hand
+        if (chanceToSurviveBuffer[ctrEvict] == 0) {
+          ctrFound = ctrEvict;
+          oldValue = valueBuffer[ctrFound];
+          oldKey = keyBuffer[ctrFound];
+        }
+
+        // circular buffer has no bounds
+        ctrEvict++;
+        if (ctrEvict >= size) {
+          ctrEvict = 0;
+        }
+      }
+
+      mapping.erase(keyBuffer[ctrFound]);
+      valueMemUsage -= valueBuffer[ctrFound].size();
+      valueBuffer[ctrFound] = LruValue();
+      chanceToSurviveBuffer[ctrFound] = 0;
+      auto key = LruKey();
+      mapping.emplace(key, ctrFound);
+      keyBuffer[ctrFound] = key;
+    }
+  }
+
   // CLOCK algorithm with 2 hand counters (1 for second chance for a cache slot
   // to survive, 1 for eviction of cache slot) opType=0: get opType=1: set
   LruValue const accessClock2Hand(const LruKey &key, const LruValue *value,
@@ -187,7 +231,7 @@ public:
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
           mapping.erase(keyBuffer[ctrFound]);
-          valueMemUsage -= value[ctrFound].size();
+          valueMemUsage -= valueBuffer[ctrFound].size();
           valueMemUsage += loadedData.size();
           valueBuffer[ctrFound] = loadedData;
           chanceToSurviveBuffer[ctrFound] = 0;
@@ -218,7 +262,7 @@ public:
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
           mapping.erase(keyBuffer[ctrFound]);
-          valueMemUsage -= value[ctrFound].size();
+          valueMemUsage -= valueBuffer[ctrFound].size();
           valueMemUsage += loadedData.size();
           valueBuffer[ctrFound] = loadedData;
           chanceToSurviveBuffer[ctrFound] = 0;
