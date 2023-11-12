@@ -24,21 +24,32 @@ enum class VisitType {
   WRITE = 1,
 };
 
+struct CacheKey {
+  std::string offset;
+  long length;
+  std::string key;
+
+  CacheKey() = delete;
+  CacheKey(const std::string &o, long l)
+      : offset(o), length(l), key(offset + "_" + std::to_string(length)) {}
+};
+
 struct Row {
   long timestamp; // 100ns
   VisitType type;
-  std::string offset;
-  long length;
+  CacheKey cache_key;
 
   Row() = delete;
   Row(long ts, VisitType t, const std::string &o, long l)
-      : timestamp(ts), type(t), offset(o), length(l) {}
+      : timestamp(ts), type(t), cache_key(o, l) {}
   void debug() const {
-    printf("%ld,%d,%s,%ld\n", timestamp, type, offset.c_str(), length);
+    printf("%ld,%d,%s,%ld\n", timestamp, static_cast<int>(type),
+           cache_key.offset.c_str(), cache_key.length);
   }
 };
 
-std::unordered_map<std::string /* offset */, Row> storage;
+std::vector<Row> rows;
+std::unordered_map<std::string /* offset */, std::string> storage;
 
 void init_storage() {
   std::ifstream file(FLAGS_file);
@@ -47,12 +58,14 @@ void init_storage() {
   }
   std::string line;
 
-  std::vector<Row> rows;
-  rows.reserve(4000000);
+  rows.reserve(FLAGS_storage_size);
 
   long begin_ts = -1;
+  long count = 0;
 
-  while (std::getline(file, line)) {
+  while (count < FLAGS_storage_size && std::getline(file, line)) {
+    ++count;
+
     std::istringstream iss(line);
     std::string value;
     std::vector<std::string> values;
@@ -74,24 +87,24 @@ void init_storage() {
                           offset, std::stol(length)));
   }
 
-  int count = 0;
+  count = 0;
   for (const Row &row : rows) {
-    row.debug();
-    ++count;
-    if (count > 10) {
-      break;
+    if (count < 10) {
+      ++count;
+      row.debug();
     }
+    storage[row.cache_key.key] = "true";
   }
 
   printf("generated storage, size:%ld\n", rows.size());
 }
 
 std::pair<size_t, long long> test_basic_lru() {
-  cache::lru_cache<std::string, std::string> cache(FLAGS_cache_size, storage);
-  TimeCost tc;
+  cache::lru_cache<key_type, value_type> cache(FLAGS_cache_size, storage);
 
-  for (const key_type &each : test_keys) {
-    cache.get(each);
+  TimeCost tc;
+  for (const Row &row : rows) {
+    cache.get(row.cache_key.key);
   }
 
   return {cache.get_miss(), tc.get_elapsed()};
@@ -111,9 +124,10 @@ std::pair<size_t, long long> test_clock_lru() {
                                             write_miss);
 
   TimeCost tc;
-  for (const key_type &each : test_keys) {
-    cache.get(each);
+  for (const Row &row : rows) {
+    cache.get(row.cache_key.key);
   }
+
   return {miss, tc.get_elapsed()};
 }
 
@@ -131,8 +145,8 @@ std::pair<size_t, long long> test_my_clock() {
                                            read_miss, write_miss);
 
   TimeCost tc;
-  for (const key_type &each : test_keys) {
-    cache.get(each);
+  for (const Row &row : rows) {
+    cache.get(row.cache_key.key);
   }
   return {miss, tc.get_elapsed()};
 }
