@@ -49,7 +49,7 @@ public:
     auto it = _cache_items_map.find(key);
     if (it == _cache_items_map.end()) {
       ++_miss;
-      auto value = _storage.at(key);
+      auto &value = _storage.at(key);
       if (value.size() <= _max_mem_size) {
         put(key, _storage.at(key));
         return get(key);
