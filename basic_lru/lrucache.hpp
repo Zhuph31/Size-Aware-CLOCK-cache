@@ -49,8 +49,12 @@ public:
     auto it = _cache_items_map.find(key);
     if (it == _cache_items_map.end()) {
       ++_miss;
-      put(key, _storage.at(key));
-      return get(key);
+      auto value = _storage.at(key);
+      if (value.size() <= _max_mem_size) {
+        put(key, _storage.at(key));
+        return get(key);
+      }
+      return value;
     } else {
       _cache_items_list.splice(_cache_items_list.begin(), _cache_items_list,
                                it->second);
