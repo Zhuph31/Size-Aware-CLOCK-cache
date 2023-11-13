@@ -70,7 +70,7 @@ public:
   // then cache gets data from backing-store
   // then returns the result to user
   // then cache is available from RAM on next get/set access with same key
-  inline virtual const LruValue get(const LruKey &key) noexcept {
+  inline const LruValue get(const LruKey &key) noexcept {
     LruValue ret = accessClock2Hand(key, nullptr);
     controlMemUsage();
     return ret;
@@ -132,11 +132,12 @@ public:
   }
 
   void controlMemUsage() {
+    // int evicts = 0;
     while (valueMemUsage > memLimit) {
       long long ctrFound = -1;
       LruValue oldValue;
       LruKey oldKey;
-      while (ctrFound == -1) {
+      while (ctrFound == -1 || valueBuffer[ctrFound].size() == 0) {
         // second-chance hand lowers the "chance" status down if its 1 but
         // slot is saved from eviction 1 more chance to be in a cache-hit
         // until eviction-hand finds this
@@ -164,6 +165,10 @@ public:
         }
       }
 
+      // printf("valueMemUsage:%lu, evict target size:%lu, limit:%ld\n",
+      //        valueMemUsage, valueBuffer[ctrFound].size(), memLimit);
+      // getchar();
+
       mapping.erase(keyBuffer[ctrFound]);
       valueMemUsage -= valueBuffer[ctrFound].size();
       valueBuffer[ctrFound] = LruValue();
@@ -171,7 +176,14 @@ public:
       auto key = LruKey();
       mapping.emplace(key, ctrFound);
       keyBuffer[ctrFound] = key;
+
+      // ++evicts;
     }
+
+    // if (evicts > 0) {
+    // printf("control mem usage, did %d evictions\n", evicts);
+    // getchar();
+    // }
   }
 
   // CLOCK algorithm with 2 hand counters (1 for second chance for a cache slot
@@ -235,7 +247,8 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
-          if (shouldAdopt(loadedData.size())) {
+          auto loadedDataSize = loadedData.size();
+          if (shouldAdopt(loadedDataSize) && loadedDataSize < memLimit) {
             mapping.erase(keyBuffer[ctrFound]);
             valueMemUsage -= valueBuffer[ctrFound].size();
             valueMemUsage += loadedData.size();
@@ -268,7 +281,8 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
-          if (shouldAdopt(loadedData.size())) {
+          auto loadedDataSize = loadedData.size();
+          if (shouldAdopt(loadedDataSize) && loadedDataSize < memLimit) {
             mapping.erase(keyBuffer[ctrFound]);
             valueMemUsage -= valueBuffer[ctrFound].size();
             valueMemUsage += loadedData.size();
