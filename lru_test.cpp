@@ -10,6 +10,7 @@
 #include "basic_lru/lrucache.hpp"
 #include "utils.h"
 
+DEFINE_int64(init_times, 10, "");
 DEFINE_int64(storage_size, 10000, "");
 DEFINE_int64(iterations, 10000, "");
 DEFINE_int64(cache_size, 1000, "");
