@@ -93,7 +93,7 @@ void init_storage() {
       ++count;
       row.debug();
     }
-    storage[row.cache_key.key] = "true";
+    storage[row.cache_key.key] = std::string(row.cache_key.length, 'a');
   }
 
   printf("generated storage, size:%ld\n", rows.size());
