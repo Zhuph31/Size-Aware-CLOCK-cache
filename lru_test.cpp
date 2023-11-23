@@ -105,6 +105,9 @@ struct Metrics {
   size_t mem_consume;
   Metrics() = delete;
   Metrics(size_t m, size_t t, size_t mc) : miss(m), tc(t), mem_consume(mc) {}
+  void print() const {
+    printf("miss:%lu, tc:%lu, mem consume:%lu\n", miss, tc, mem_consume);
+  }
 };
 
 Metrics test_basic_lru() {
@@ -123,6 +126,7 @@ Metrics test_basic_lru() {
 
 Metrics test_clock_lru(bool my) {
   size_t miss = 0;
+  size_t count = 0, mem_consume = 0;
   auto read_miss = [&](key_type key) {
     ++miss;
     return storage.at(key);
@@ -137,9 +141,11 @@ Metrics test_clock_lru(bool my) {
   TimeCost tc;
   for (const Row &row : rows) {
     cache.get(row.cache_key.key);
+    mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
+    ++count;
   }
 
-  return {miss, tc.get_elapsed(), 0};
+  return {miss, tc.get_elapsed(), mem_consume};
 }
 
 Metrics test_my_clock() {
@@ -167,14 +173,9 @@ int main(int argc, char *argv[]) {
 
   init_storage();
 
-  Metrics m(0, 0, 0);
-
-  m = test_basic_lru();
-  printf("basic lru, miss:%lu, cost:%lu\n", m.miss, m.tc);
-  m = test_clock_lru(false);
-  printf("clock lru, miss:%lu, cost:%lu\n", m.miss, m.tc);
-  m = test_my_clock();
-  printf("my lru, miss:%lu, cost:%lu\n", m.miss, m.tc);
+  test_basic_lru().print();
+  test_clock_lru(false).print();
+  test_my_clock().print();
 
   return 0;
 }
