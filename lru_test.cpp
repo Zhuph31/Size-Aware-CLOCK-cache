@@ -135,37 +135,33 @@ Metrics test_clock_lru(bool my) {
     storage[key] = value;
     exit(-1);
   };
-  LruClockCache<key_type, value_type> cache(FLAGS_cache_size, read_miss,
-                                            write_miss);
 
-  TimeCost tc;
-  for (const Row &row : rows) {
-    cache.get(row.cache_key.key);
-    mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
-    ++count;
+  if (!my) {
+    LruClockCache<key_type, value_type> cache(FLAGS_cache_size, read_miss,
+                                              write_miss);
+
+    TimeCost tc;
+    for (const Row &row : rows) {
+      cache.get(row.cache_key.key);
+      mem_consume =
+          (mem_consume * count + cache.get_mem_consume()) / (count + 1);
+      ++count;
+    }
+
+    return {miss, tc.get_elapsed(), mem_consume};
+  } else {
+    MyClockCache<key_type, value_type> cache(FLAGS_alpha, FLAGS_cache_size,
+                                             read_miss, write_miss);
+
+    TimeCost tc;
+    for (const Row &row : rows) {
+      cache.get(row.cache_key.key);
+      mem_consume =
+          (mem_consume * count + cache.get_mem_consume()) / (count + 1);
+      ++count;
+    }
+    return {miss, tc.get_elapsed(), mem_consume};
   }
-
-  return {miss, tc.get_elapsed(), mem_consume};
-}
-
-Metrics test_my_clock() {
-  size_t miss = 0;
-  auto read_miss = [&](key_type key) {
-    ++miss;
-    return storage.at(key);
-  };
-  auto write_miss = [&](key_type key, value_type value) {
-    storage[key] = value;
-    exit(-1);
-  };
-  MyClockCache<key_type, value_type> cache(FLAGS_alpha, FLAGS_cache_size,
-                                           read_miss, write_miss);
-
-  TimeCost tc;
-  for (const Row &row : rows) {
-    cache.get(row.cache_key.key);
-  }
-  return {miss, tc.get_elapsed(), 0};
 }
 
 int main(int argc, char *argv[]) {
@@ -175,7 +171,7 @@ int main(int argc, char *argv[]) {
 
   test_basic_lru().print();
   test_clock_lru(false).print();
-  test_my_clock().print();
+  test_clock_lru(true).print();
 
   return 0;
 }

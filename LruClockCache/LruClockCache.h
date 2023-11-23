@@ -58,6 +58,7 @@ public:
       keyBuffer.push_back(LruKey());
     }
     mapping.reserve(numElements);
+    check_size = [](size_t) { return true; };
   }
 
   // get element from cache
@@ -65,7 +66,7 @@ public:
   // then cache gets data from backing-store
   // then returns the result to user
   // then cache is available from RAM on next get/set access with same key
-  inline const LruValue get(const LruKey &key) noexcept {
+  virtual inline const LruValue get(const LruKey &key) noexcept {
     return accessClock2Hand(key, nullptr);
   }
 
@@ -186,6 +187,10 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
+          if (!check_size(loadedData.size())) {
+            return loadedData;
+          }
+
           mem_consume -=
               keyBuffer[ctrFound].size() + valueBuffer[ctrFound].size();
           mem_consume += key.size() + loadedData.size();
@@ -218,6 +223,10 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
+          if (!check_size(loadedData.size())) {
+            return loadedData;
+          }
+
           mapping.erase(keyBuffer[ctrFound]);
           mem_consume -=
               keyBuffer[ctrFound].size() + valueBuffer[ctrFound].size();
@@ -246,7 +255,7 @@ public:
 
   size_t get_mem_consume() const { return mem_consume; }
 
-private:
+protected:
   const ClockHandInteger size;
   std::mutex mut;
   std::unordered_map<LruKey, ClockHandInteger> mapping;
@@ -259,6 +268,7 @@ private:
   ClockHandInteger ctr;
   ClockHandInteger ctrEvict;
   size_t mem_consume;
+  std::function<bool(size_t)> check_size;
 };
 
 #endif /* LRUCLOCKCACHE_H_ */
