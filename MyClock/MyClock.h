@@ -49,7 +49,11 @@ public:
       : LruClockCache<LruKey, LruValue>(numElements, readMiss, writeMiss),
         threshold_(alpha) {
     this->check_size = [this](size_t s) {
-      return s < threshold_.get_threshold();
+      bool pass = s < threshold_.get_threshold();
+      if (!pass) {
+        printf("reject, %lu vs %lu\n", s, threshold_.get_threshold());
+      }
+      return pass;
     };
   }
 

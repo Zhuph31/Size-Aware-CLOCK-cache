@@ -116,7 +116,8 @@ Metrics test_basic_lru() {
 
   TimeCost tc;
   for (const Row &row : rows) {
-    cache.get(row.cache_key.key);
+    auto &val = cache.get(row.cache_key.key);
+    printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
     mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
     ++count;
   }
@@ -142,7 +143,8 @@ Metrics test_clock_lru(bool my) {
 
     TimeCost tc;
     for (const Row &row : rows) {
-      cache.get(row.cache_key.key);
+      auto &val = cache.get(row.cache_key.key);
+      printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
       mem_consume =
           (mem_consume * count + cache.get_mem_consume()) / (count + 1);
       ++count;
@@ -155,7 +157,8 @@ Metrics test_clock_lru(bool my) {
 
     TimeCost tc;
     for (const Row &row : rows) {
-      cache.get(row.cache_key.key);
+      auto &val = cache.get(row.cache_key.key);
+      printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
       mem_consume =
           (mem_consume * count + cache.get_mem_consume()) / (count + 1);
       ++count;

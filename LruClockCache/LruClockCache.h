@@ -267,7 +267,7 @@ protected:
   const std::function<void(LruKey, LruValue)> saveData;
   ClockHandInteger ctr;
   ClockHandInteger ctrEvict;
-  size_t mem_consume;
+  size_t mem_consume = 0;
   std::function<bool(size_t)> check_size;
 };
 
