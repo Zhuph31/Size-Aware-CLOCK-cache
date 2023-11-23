@@ -103,10 +103,13 @@ struct Metrics {
   size_t miss;
   size_t tc;
   size_t mem_consume;
+  size_t rejects;
   Metrics() = delete;
-  Metrics(size_t m, size_t t, size_t mc) : miss(m), tc(t), mem_consume(mc) {}
+  Metrics(size_t m, size_t t, size_t mc, size_t r = 0)
+      : miss(m), tc(t), mem_consume(mc), rejects(r) {}
   void print() const {
-    printf("miss:%lu, tc:%lu, mem consume:%lu\n", miss, tc, mem_consume);
+    printf("miss:%lu, tc:%lu, mem consume:%lu, rejects:%lu\n", miss, tc,
+           mem_consume, rejects);
   }
 };
 
@@ -117,7 +120,7 @@ Metrics test_basic_lru() {
   TimeCost tc;
   for (const Row &row : rows) {
     auto &val = cache.get(row.cache_key.key);
-    printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
+    // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
     mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
     ++count;
   }
@@ -144,7 +147,7 @@ Metrics test_clock_lru(bool my) {
     TimeCost tc;
     for (const Row &row : rows) {
       auto &val = cache.get(row.cache_key.key);
-      printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
+      // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
       mem_consume =
           (mem_consume * count + cache.get_mem_consume()) / (count + 1);
       ++count;
@@ -158,12 +161,12 @@ Metrics test_clock_lru(bool my) {
     TimeCost tc;
     for (const Row &row : rows) {
       auto &val = cache.get(row.cache_key.key);
-      printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
+      // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
       mem_consume =
           (mem_consume * count + cache.get_mem_consume()) / (count + 1);
       ++count;
     }
-    return {miss, tc.get_elapsed(), mem_consume};
+    return {miss, tc.get_elapsed(), mem_consume, cache.get_rejects()};
   }
 }
 

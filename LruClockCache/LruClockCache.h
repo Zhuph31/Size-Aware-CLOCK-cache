@@ -255,6 +255,8 @@ public:
 
   size_t get_mem_consume() const { return mem_consume; }
 
+  size_t get_rejects() const { return rejects_; }
+
 protected:
   const ClockHandInteger size;
   std::mutex mut;
@@ -269,6 +271,7 @@ protected:
   ClockHandInteger ctrEvict;
   size_t mem_consume = 0;
   std::function<bool(size_t)> check_size;
+  size_t rejects_ = 0;
 };
 
 #endif /* LRUCLOCKCACHE_H_ */

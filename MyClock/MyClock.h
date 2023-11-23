@@ -22,16 +22,20 @@ public:
       : alpha_(alpha), threshold_(0.0), initialized_(false) {}
 
   void update_threshold(double observation) {
+    // printf("observation:%lf, threshold:%lf\n", observation, threshold_);
     if (!initialized_) {
-      threshold_ = observation;
+      threshold_ = observation / 2;
       initialized_ = true;
     } else {
       threshold_ = alpha_ * observation + (1.0 - alpha_) * threshold_;
     }
+    // printf("update threshold to %lf\n", threshold_);
+    // getchar();
   }
 
-  // 获取当前阈值
   double get_threshold() const { return threshold_; }
+
+  bool initialized() const { return initialized_; }
 
 private:
   double alpha_;
@@ -49,9 +53,13 @@ public:
       : LruClockCache<LruKey, LruValue>(numElements, readMiss, writeMiss),
         threshold_(alpha) {
     this->check_size = [this](size_t s) {
+      if (!threshold_.initialized()) {
+        threshold_.update_threshold(s);
+      }
       bool pass = s < threshold_.get_threshold();
       if (!pass) {
-        printf("reject, %lu vs %lu\n", s, threshold_.get_threshold());
+        ++this->rejects_;
+        // printf("reject, %lu vs %lf\n", s, threshold_.get_threshold());
       }
       return pass;
     };
@@ -60,7 +68,7 @@ public:
   inline const LruValue get(const LruKey &key) noexcept override {
     LruValue value = this->accessClock2Hand(key, nullptr);
     // always update threshold
-    threshold_.update_threshold(key.size());
+    threshold_.update_threshold(value.size());
     return value;
   }
 
