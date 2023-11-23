@@ -31,10 +31,12 @@ public:
       _cache_items_map.erase(it);
     }
     _cache_items_map[key] = _cache_items_list.begin();
+    _mem_consume += key.size() + value.size();
 
     if (_cache_items_map.size() > _max_size) {
       auto last = _cache_items_list.end();
       last--;
+      _mem_consume -= last->first.size() + last->second.size();
       _cache_items_map.erase(last->first);
       _cache_items_list.pop_back();
     }
@@ -61,12 +63,15 @@ public:
 
   size_t get_miss() const { return _miss; }
 
+  size_t get_mem_consume() const { return _mem_consume; }
+
 private:
   std::list<key_value_pair_t> _cache_items_list;
   std::unordered_map<key_t, list_iterator_t> _cache_items_map;
   size_t _max_size;
   std::unordered_map<key_t, value_t> _storage;
   size_t _miss = 0;
+  size_t _mem_consume = 0;
 };
 
 } // namespace cache

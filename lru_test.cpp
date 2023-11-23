@@ -99,19 +99,30 @@ void init_storage() {
   printf("generated storage, size:%ld\n", rows.size());
 }
 
-std::pair<size_t, long long> test_basic_lru() {
+struct Metrics {
+  size_t miss;
+  size_t tc;
+  size_t mem_consume;
+  Metrics() = delete;
+  Metrics(size_t m, size_t t, size_t mc) : miss(m), tc(t), mem_consume(mc) {}
+};
+
+Metrics test_basic_lru() {
   cache::lru_cache<key_type, value_type> cache(FLAGS_cache_size, storage);
+  size_t count = 0, mem_consume = 0;
 
   TimeCost tc;
   for (const Row &row : rows) {
     cache.get(row.cache_key.key);
+    mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
+    ++count;
   }
 
-  return {cache.get_miss(), tc.get_elapsed()};
+  return {cache.get_miss(), tc.get_elapsed(), mem_consume};
 }
 
-std::pair<size_t, long long> test_clock_lru() {
-  int miss = 0;
+Metrics test_clock_lru(bool my) {
+  size_t miss = 0;
   auto read_miss = [&](key_type key) {
     ++miss;
     return storage.at(key);
@@ -128,11 +139,11 @@ std::pair<size_t, long long> test_clock_lru() {
     cache.get(row.cache_key.key);
   }
 
-  return {miss, tc.get_elapsed()};
+  return {miss, tc.get_elapsed(), 0};
 }
 
-std::pair<size_t, long long> test_my_clock() {
-  int miss = 0;
+Metrics test_my_clock() {
+  size_t miss = 0;
   auto read_miss = [&](key_type key) {
     ++miss;
     return storage.at(key);
@@ -148,7 +159,7 @@ std::pair<size_t, long long> test_my_clock() {
   for (const Row &row : rows) {
     cache.get(row.cache_key.key);
   }
-  return {miss, tc.get_elapsed()};
+  return {miss, tc.get_elapsed(), 0};
 }
 
 int main(int argc, char *argv[]) {
@@ -156,15 +167,14 @@ int main(int argc, char *argv[]) {
 
   init_storage();
 
-  size_t miss;
-  long long cost;
+  Metrics m(0, 0, 0);
 
-  std::tie(miss, cost) = test_basic_lru();
-  printf("basic lru, miss:%lu, cost:%lld\n", miss, cost);
-  std::tie(miss, cost) = test_clock_lru();
-  printf("clock lru, miss:%lu, cost:%lld\n", miss, cost);
-  std::tie(miss, cost) = test_my_clock();
-  printf("my lru, miss:%lu, cost:%lld\n", miss, cost);
+  m = test_basic_lru();
+  printf("basic lru, miss:%lu, cost:%lu\n", m.miss, m.tc);
+  m = test_clock_lru(false);
+  printf("clock lru, miss:%lu, cost:%lu\n", m.miss, m.tc);
+  m = test_my_clock();
+  printf("my lru, miss:%lu, cost:%lu\n", m.miss, m.tc);
 
   return 0;
 }
