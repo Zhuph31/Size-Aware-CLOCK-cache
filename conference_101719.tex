@@ -26,28 +26,32 @@ email address or ORCID}
 \maketitle
 
 \begin{abstract}
-In the contemporary computer system world, Least Recently Used (LRU) algorithm has been a famous and widely adopted cache replacement policy that offers good object hit ratio (OHR) and performance. It maintains the recency information about the objects stored and do replacement based on that knowledge. However, the algorithm is totally based on recency and has not taken the size of the objects into consideration. This can lead to large cache size in memory, causing problems and posing challenges in scenarios where memory is limited. In this paper, a series of modifications to the basic LRU algorithm are introduced, aiming to reduce the overall memory consumption while still reaching a good OHR and performance while keep an eye on the object size when adopting. The Size-Aware Clock (SAC) algorithm is proved through experiments based on real-world traces, showing that it provides a more memory-efficient cache replacement policy, opening the possibility of maintaining good OHR while reducing memory usage.
+In the contemporary computer system world, Least Recently Used (LRU) algorithm has been a famous and widely adopted cache replacement policy that offers good object hit ratio (OHR) and performance. It maintains the recency information about the objects stored and do replacement based on that knowledge. However, the algorithm is totally based on recency and has not taken the size of the objects into consideration. This can lead to large cache size in memory, causing problems and posing challenges in scenarios where memory is limited. In this paper, a series of modifications to the basic LRU algorithm are introduced, aiming to reduce the overall memory consumption while still reaching a good OHR and performance while keep an eye on the object size when adopting. The Size-Aware Clock (SA-CLOCK) algorithm is proved through experiments based on real-world traces, showing that it provides a more memory-efficient cache replacement policy, opening the possibility of maintaining good OHR while reducing memory usage.
 \end{abstract}
 
 \begin{IEEEkeywords}
-component, formatting, style, styling, insert
+cache, LRU, memory-efficient, size-aware
 \end{IEEEkeywords}
 
 \section{Introduction}
-This document is a model and instructions for \LaTeX.
-Please observe the conference page limits. 
+Introduction:
 
-\section{Ease of Use}
+In the realm of memory management and data caching, the Least Recently Used (LRU) algorithm has long stood as a cornerstone for optimizing data retrieval in various computing systems. Specifically designed for in-memory cache systems, LRU employs a mechanism that prioritizes recently accessed data, thereby enhancing cache hit rates and consequently improving overall system performance.
 
-\subsection{Maintaining the Integrity of the Specifications}
+However, as computing environments evolve, challenges arise, particularly in scenarios where memory resources are constrained. In such instances, striking a balance between maintaining high cache hit rates and minimizing the memory footprint becomes imperative. Traditional algorithms, including LRU, often fall short in addressing the nuanced intricacies of memory limitations. Some modified algorithms like CLOCK pays more attention to memory usage by simplifying LRU, yet they still neglects object sizes within the cache.
 
-The IEEEtran class file is used to format your paper and style the text. All margins, 
-column widths, line spaces, and text fonts are prescribed; please do not 
-alter them. You may note peculiarities. For example, the head margin
-measures proportionately more than is customary. This measurement 
-and others are deliberate, using specifications that anticipate your paper 
-as one part of the entire proceedings, and not as an independent document. 
-Please do not revise any of the current designations.
+This paper delves into the evolving landscape of caching strategies, motivated by the need to optimize memory usage while preserving cache efficiency. The focus lies on recognizing the constraints posed by limited memory availability and the necessity to rethink existing algorithms to adapt to these constraints.
+
+One notable oversight in conventional caching approaches is the neglect of the individual sizes of objects within the cache. Recognizing this limitation, our proposed algorithm seeks to rectify this gap by introducing a novel approach that not only upholds cache hit rates but also strategically attends to the size of objects stored in the cache.
+
+In the subsequent sections, we present an in-depth exploration of the limitations of traditional algorithms and articulate the design principles and mechanisms behind our newly proposed algorithm. Through meticulous consideration of object sizes, our algorithm aims to demonstrate a reduction in overall memory consumption while keeping cache hit rates at par with or potentially surpassing existing approaches. This paradigm shift represents a significant stride towards more resource-efficient and effective memory management in contemporary computing environments.
+
+The rest of the paper is organized as follows. Section 2 presents the background and motivations. Section 3 elaborates the principle of SA-CLOCK. Section 4 provides evaluation for SA-CLOCK. Section 5 summarizes some related works. The last section concludes this work.
+
+\section{Background and Motivation}
+
+\subsection{Least Recently Used}
+The LRU policy is widely adopted and is the base of many other cache replacement policies.
 
 \section{Prepare Your Paper Before Styling}
 Before you begin to format your paper, first write and save the content as a 
