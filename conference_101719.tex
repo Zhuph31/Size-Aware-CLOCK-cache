@@ -46,7 +46,7 @@ One notable oversight in conventional caching approaches is the neglect of the i
 
 In the subsequent sections, we present an in-depth exploration of the limitations of traditional algorithms and articulate the design principles and mechanisms behind our newly proposed algorithm. Through meticulous consideration of object sizes, our algorithm aims to demonstrate a reduction in overall memory consumption while keeping cache hit rates at par with or potentially surpassing existing approaches. This paradigm shift represents a significant stride towards more resource-efficient and effective memory management in contemporary computing environments.
 
-The rest of the paper is organized as follows. Section 2 presents the background and motivations. Section 3 elaborates the principle of SA-CLOCK. Section 4 provides evaluation for SA-CLOCK. Section 5 summarizes some related works. The last section concludes this work.
+The rest of the paper is organized as follows. Section 2 presents the background and motivations. Section 3 discusses some related work in this area and address their differences from our approach. Section 4 elaborates the principle of SA-CLOCK. Section 5 provides evaluation for SA-CLOCK. Section 6 summarizes some related works. The last section concludes this work.
 
 \section{Background and Motivation}
 
@@ -77,9 +77,18 @@ Both TBF and Me-CLOCK are designed for flash-based cache and have indeed reduced
 
 \subsection{AdaptSize}
 This paper proposed a new cache admission policy called AdaptSize. It is the first caching system to uses a size-aware admission policy that is continuously adapted to the request traffic. There are two variants proposed. AdaptSize(Chance) probabilistically decides whether or not to admit an object into the cache with the admission probability equal to $e^{-\frac{\text{size}}{c}}$, where c is a tunable parameter. AdaptSize(Threshold) admits an object if its size is below a tunable parameter c. The threshold and its parameters are constantly updated as the requests come in. AdaptSize is evaluated on production request traces and the results show that AdaptSize indeed improves the Object Hit Ratio.
-AdaptSize is differ from other policies due to its attention to object size. It chooses to use the more complicated AdaptSize(Chance) while the results shows that there is actually very little different between it and AdaptSize(Threshold).
+AdaptSize is differ from other policies due to its attention to object size. It chooses to use the more complicated AdaptSize(Chance) while the results shows that there is actually very little different between it and AdaptSize(Threshold). The author evaluated AdaptSize by combining it with the Varnish Cache, but did not tried to combine it with the LRU policy.
 
-\section{Prepare Your Paper Before Styling}
+\section{Size-Aware CLOCK}
+Size-Aware CLOCK is an innovative cache replacement strategy that builds upon the established CLOCK algorithm while introducing a size-aware dimension to enhance caching efficiency. In contrast to traditional approaches, SA-CLOCK dynamically evaluates the size of each incoming object against a threshold. This criterion ensures that only objects smaller than the specified threshold are permitted entry into the cache. By incorporating this size-aware filtering mechanism, SA-CLOCK aims to optimize cache memory consumption by tailoring its decisions to the individual characteristics of stored objects.
+
+The primary motivation behind SA-CLOCK lies in addressing the diverse nature of object sizes encountered in modern computing environments. This strategy recognizes that smaller objects may benefit more from frequent caching, and by selectively admitting them into the cache, it seeks to strike a balance between maximizing cache hits and minimizing space usage. Through this approach, SA-CLOCK not only inherits the strengths of the CLOCK algorithm, such as simplicity and low computational overhead, but also introduces a nuanced consideration of object size.
+
+SA-CLOCK introduces a dynamic threshold mechanism that continuously adapts to incoming inputs, enhancing its cache replacement strategy. This dynamic threshold is fine-tuned in real-time through the utilization of an exponential smoothing algorithm. Unlike static thresholds, SA-CLOCK's dynamic approach allows it to autonomously respond to changes in the characteristics of incoming objects, providing a more responsive and adaptive caching strategy. The incorporation of the exponential smoothing algorithm ensures that the threshold evolves gradually, striking a balance between responsiveness to recent changes and stability against short-term fluctuations. This dynamic and intelligent threshold adjustment mechanism equips SA-CLOCK to optimize cache utilization in varying workloads, making it a versatile and efficient solution for dynamic computing environments.
+
+In summary, SA-CLOCK represents a forward-thinking evolution of cache management strategies, incorporating size awareness to refine the process of object admission into the cache. By combining the established principles of the CLOCK algorithm with a novel size-based criterion, SA-CLOCK endeavors to enhance overall cache performance, catering to the unique demands posed by varying object sizes in contemporary computing environments.
+
+
 Before you begin to format your paper, first write and save the content as a 
 separate text file. Complete all content and organizational editing before 
 formatting. Please note sections \ref{AA}--\ref{SCM} below for more information on 
