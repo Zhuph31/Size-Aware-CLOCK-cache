@@ -13,7 +13,7 @@
 
 \title{LRU*\\
 {\footnotesize \textsuperscript{*}}
-\thanks{Identify applicable funding agency here. If none, delete this.}
+\thanks{}
 }
 
 \author{\IEEEauthorblockN{1\textsuperscript{st} Penghui Zhu}
@@ -26,7 +26,7 @@ email address or ORCID}
 \maketitle
 
 \begin{abstract}
-In the contemporary computer system world, Least Recently Used (LRU) algorithm has been a famous and widely adopted cache replacement policy that offers good object hit ratio (OHR) and performance. It maintains the recency information about the objects stored and do replacement based on that knowledge. However, the algorithm is totally based on recency and has not taken the size of the objects into consideration. This can lead to large cache size in memory, causing problems and posing challenges in scenarios where memory is limited. In this paper, a series of modifications to the basic LRU algorithm are introduced, aiming to reduce the overall memory consumption while still reaching a good OHR and performance while keep an eye on the object size when adopting. The Size-Aware Clock (SA-CLOCK) algorithm is proved through experiments based on real-world traces, showing that it provides a more memory-efficient cache replacement policy, opening the possibility of maintaining good OHR while reducing memory usage.
+In the contemporary computer system world, Least Recently Used (LRU) algorithm has been a famous and widely adopted cache replacement policy that offers good object hit ratio (OHR) and performance. It maintains the recency information about the objects stored and do replacement based on that knowledge. However, the algorithm is totally based on recency and has not taken the size of the objects into consideration. This can lead to large cache size in memory, causing problems and posing challenges in scenarios where memory is limited. In this paper, a series of modifications to the basic LRU algorithm are introduced, aiming to reduce the overall memory consumption while still reaching a good OHR and performance while keep an eye on the object size when adopting. The Size-Aware CLOCK (SA-CLOCK) algorithm is proved through experiments based on real-world traces, showing that it provides a more memory-efficient cache replacement policy, opening the possibility of maintaining good OHR while reducing memory usage.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -51,7 +51,33 @@ The rest of the paper is organized as follows. Section 2 presents the background
 \section{Background and Motivation}
 
 \subsection{Least Recently Used}
-The LRU policy is widely adopted and is the base of many other cache replacement policies.
+The Least Recently Used (LRU) cache replacement policy is a foundational concept in computer science, vital for optimizing cache system performance. Caches, high-speed memory storage units, store frequently accessed data to expedite retrieval from slower, main memory. LRU efficiently manages cache contents by prioritizing the retention of recently accessed data.
+LRU operates on the principle of discarding the least recently used items in the cache when space is needed for new data. This strategy is grounded in the concept of temporal locality, assuming that recently accessed items are more likely to be accessed again soon. LRU employs heuristics based on historical usage patterns to make informed decisions about cache management.
+Common LRU implementations involve maintaining a linked list or a similar data structure to track the order in which items were accessed. When an item is accessed, it is moved to the front of the list, signifying recent use. Eviction occurs by removing the item at the list's end when the cache reaches capacity. Alternatively, counters or timestamps associated with each item can be used to identify the least recently used item when eviction is necessary.
+In implementing the LRU cache policy, a hash map is commonly used to efficiently reference objects in the linked list. This hash map acts as a lookup table, associating each item with its position in the list. However, this approach introduces potential memory overhead as the hash map itself requires extra memory for mapping information. In scenarios with numerous cached items, managing this additional memory becomes crucial to strike a balance between performance gains and resource utilization.
+Moreover, LRU also has no adoption or eviction policies related to the objects' size. This means that LRU can adopt very large objects into cache, resulting in the surge of the memory consumption. Given a limited amount of memory space, LRU would hurt other applications for taking up too much memory.
+
+\subsection{CLOCK}
+CLOCK is another widely adopted cache replacement policy. CLOCK simplifies memory management by assigning a single-byte flag to each cached object, eliminating the need for complex hashmap structures. The algorithm builds upon LRU principles but distinguishes itself through a circular buffer mechanism, enhancing efficiency without compromising performance.
+CLOCK's core principle involves a circular buffer and a clock hand that moves sequentially through cached objects. When an object is accessed, its flag is set, and the clock hand advances. If the hand encounters a flagged object, it resets the flag. This modification, combined with a straightforward replacement strategy based on the clock hand's position, preserves the essence of recency based eviction without the need for extensive tracking. 
+CLOCK achieves remarkable efficiency by utilizing only a single byte per cached object for the flag, in stark contrast to LRU's reliance on hashmaps. The circular buffer's minimal extra memory requirement ensures a lightweight footprint. However, CLOCK ignores object characteristics and sizes in its decision-making process. Therefore, CLOCK still suffers from the possibility of taking up too much memory space despite its relatively simpleness compared to LRU. 
+
+\section{Related Works}
+In this section, we briefly review recent work related to our design and highlight differences with our approach.
+
+\subsection{TBF}
+TBF is new RAM-frugal cache replacement policy that approximates the least-recently-used (LRU) policy. It uses two in-memory Bloom sub-filters (TBF) for maintaining the recency information and leverages an on-flash key–value store to cache objects. TBF requires only one byte of RAM per cached object, making it suitable for implementing very large flash-based caches. The two bloom filters here is used to realize the delete operation as one is discarded periodically. TBF is evaluated through simulation on traces from several block stores and key–value stores, as well as using the Yahoo! Cloud Serving Benchmark in a real system implementation. The results show that TBF achieves cache hit rate and operations per second comparable to those of LRU in spite of its much smaller memory requirements.
+
+\subsection{Me-CLOCK}
+Me-CLOCK stands for Memory-Efficient CLOCK and it targets to reduce the memory= overhead introduced by the replacement policy of SSD-based cache. It proposes a memory-efficient framework which keeps most data structures in SSD while just leaving the memory efficient data structure in main memory.
+The memory efficient data structure here refers to a new kind of bloom filter introduced by this paper. Unlike a traditional bloom filter, the new bloom filter supports element deletion and it takes over the responsibility of keeping the reused flag, indicating whether a page has been frequently accessed. The framework can be used to implement any LRU-based replacement policies under negligible memory overhead. The evaluation shows that its memory overhead is 10 times less that that introduced by traditional manners such as LRU or CLOCK.
+Me-CLOCK is similar to TBF, but it is better in the way that it can be applied to algorithms other than LRU. It also has less memory overhead because it only uses 1 bloom filter instead of 2. 
+
+Both TBF and Me-CLOCK are designed for flash-based cache and have indeed reduced the memory overhead, but they do not pay any attention to the objects themselves. Therefore, they could lead to a bigger memory consumption under the same Object Hit Ratio.
+
+\subsection{AdaptSize}
+This paper proposed a new cache admission policy called AdaptSize. It is the first caching system to uses a size-aware admission policy that is continuously adapted to the request traffic. There are two variants proposed. AdaptSize(Chance) probabilistically decides whether or not to admit an object into the cache with the admission probability equal to $e^{-\frac{\text{size}}{c}}$, where c is a tunable parameter. AdaptSize(Threshold) admits an object if its size is below a tunable parameter c. The threshold and its parameters are constantly updated as the requests come in. AdaptSize is evaluated on production request traces and the results show that AdaptSize indeed improves the Object Hit Ratio.
+AdaptSize is differ from other policies due to its attention to object size. It chooses to use the more complicated AdaptSize(Chance) while the results shows that there is actually very little different between it and AdaptSize(Threshold).
 
 \section{Prepare Your Paper Before Styling}
 Before you begin to format your paper, first write and save the content as a 
