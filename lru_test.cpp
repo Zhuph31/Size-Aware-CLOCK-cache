@@ -11,7 +11,7 @@
 #include "utils.h"
 
 DEFINE_int64(storage_size, 10000, "");
-DEFINE_int64(iterations, 10000, "");
+DEFINE_int64(iterations, 1000000, "");
 DEFINE_int64(cache_size, 1000, "");
 DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
@@ -87,16 +87,11 @@ void init_storage() {
                           offset, std::stol(length)));
   }
 
-  count = 0;
   for (const Row &row : rows) {
-    if (count < 10) {
-      ++count;
-      row.debug();
-    }
     storage[row.cache_key.key] = std::string(row.cache_key.length, 'a');
   }
 
-  // printf("generated storage, size:%ld\n", rows.size());
+  printf("storage inited\n");
 }
 
 struct Metrics {
@@ -108,8 +103,9 @@ struct Metrics {
   Metrics(size_t m, size_t t, size_t mc, size_t r = 0)
       : miss(m), tc(t), mem_consume(mc), rejects(r) {}
   void print() const {
-    printf("miss:%lu, tc:%lu, mem consume:%lu, rejects:%lu\n", miss, tc,
-           mem_consume, rejects);
+    // printf("miss:%lu, tc:%lu, mem consume:%lu, rejects:%lu\n", miss, tc,
+    //        mem_consume, rejects);
+    printf("%lu %lu %lu %lu ", miss, tc, mem_consume, rejects);
   }
 };
 
@@ -118,7 +114,8 @@ Metrics test_basic_lru() {
   size_t count = 0, mem_consume = 0;
 
   TimeCost tc;
-  for (const Row &row : rows) {
+  for (int i = 0; i < FLAGS_iterations; ++i) {
+    const Row &row = rows[i % rows.size()];
     auto &val = cache.get(row.cache_key.key);
     // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
     mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
@@ -145,7 +142,8 @@ Metrics test_clock_lru(bool my) {
                                               write_miss);
 
     TimeCost tc;
-    for (const Row &row : rows) {
+    for (int i = 0; i < FLAGS_iterations; ++i) {
+      const Row &row = rows[i % rows.size()];
       auto &val = cache.get(row.cache_key.key);
       // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
       mem_consume =
@@ -159,7 +157,8 @@ Metrics test_clock_lru(bool my) {
                                              read_miss, write_miss);
 
     TimeCost tc;
-    for (const Row &row : rows) {
+    for (int i = 0; i < FLAGS_iterations; ++i) {
+      const Row &row = rows[i % rows.size()];
       auto &val = cache.get(row.cache_key.key);
       // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
       mem_consume =
