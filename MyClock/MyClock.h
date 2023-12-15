@@ -12,14 +12,9 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <gflags/gflags.h>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
-
-#include "../LruClockCache/LruClockCache.h"
-
-DECLARE_int64(init_times);
 
 class ExponentialSmoothedThreshold {
 public:
@@ -31,10 +26,8 @@ public:
     if (!initialized_) {
       threshold_ = observation / 2;
       initialized_ = true;
-      // printf("update threshold, initialize to %lf\n", threshold_);
     } else {
       threshold_ = alpha_ * observation + (1.0 - alpha_) * threshold_;
-      // printf("update threshold, update to %lf\n", threshold_);
     }
     // printf("update threshold to %lf\n", threshold_);
     // getchar();
@@ -55,7 +48,6 @@ template <typename LruKey, typename LruValue,
 class MyClockCache : public LruClockCache<LruKey, LruValue> {
 public:
   MyClockCache(double alpha, ClockHandInteger numElements,
-               ClockHandInteger memLimit,
                const std::function<LruValue(LruKey)> &readMiss,
                const std::function<void(LruKey, LruValue)> &writeMiss)
       : LruClockCache<LruKey, LruValue>(numElements, readMiss, writeMiss),

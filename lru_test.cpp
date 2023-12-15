@@ -10,14 +10,11 @@
 #include "basic_lru/lrucache.hpp"
 #include "utils.h"
 
-DEFINE_int64(init_times, 10, "");
 DEFINE_int64(storage_size, 10000, "");
 DEFINE_int64(iterations, 10000, "");
 DEFINE_int64(cache_size, 1000, "");
-DEFINE_int64(cache_mem_limit, 1073741824, "");
 DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
-DEFINE_bool(real, false, "");
 
 using key_type = std::string;
 using value_type = std::string;
