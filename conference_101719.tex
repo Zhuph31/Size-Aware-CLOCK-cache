@@ -101,9 +101,25 @@ By embracing this adaptive approach, our Size-Aware CLOCK not only accommodates 
 3. prove that exponential smoothing is indispensable 
 
 
-\section{Evaluation}
-\subsection{Evaluation methodology}
+\section{Evaluation Methodology}
+In this section, we will discuss the evaluation methodology, dataset used, and competitors for our Size-Aware CLOCK.
 
+\subsection{Performance Evaluation}
+\subsubsection{Compared Methods}
+To maintain parity in our evaluation, we rigorously implemented alternative cache policies for comparison. This strategic approach ensures that any observed differences in performance can be confidently attributed to the unique characteristics of the Size-Aware CLOCK policy, rather than variations in the evaluation methodologies.
+
+Here we have chosen to implement LRU and CLOCK as opponents of our Size-Aware CLOCK. LRU is chosen because of it is the most famous and widely adopted recency based cache policy. CLOCK is chosen for the same reason, but also for it is the base of our Size-Aware CLOCK, which can serve as a excellent contrast to show the difference made by adding a size-aware layer when adopting objects into cache. Our evaluation criteria encompass a range of metrics commonly used to gauge cache performance, including hit rate, miss rate, and overall cache efficiency. By employing a multifaceted evaluation framework, we aim to provide a comprehensive view of how the Size-Aware CLOCK policy performs under various conditions and workloads.
+
+\subsubsection{Real Wold Traces Based Evaluation}
+We conducted a comprehensive evaluation of the Size-Aware CLOCK cache policy using real-world trace-based data. The implementation of Size-Aware CLOCK is robust and complete, and we took deliberate measures to ensure a fair and equitable evaluation by comparing its performance with other implemented cache policies.
+
+In the evaluation process, we employed real-world trace-based data. The real world traces are published by Microsoft Research Cambridge and they are 1 week block I/O traces of enterprise servers at Microsoft. Therefore, this data represents the actual workload that the Microsoft research team are using, and can prove that the evaluation process's authenticity and can give a comprehensive test of our Size-Aware CLOCK, enhancing the relevance of our findings to real-world scenarios.
+
+\subsubsection{Parameter Tunning}
+In addition to assessing the Size-Aware CLOCK algorithm's performance, we delve into the specifics of its implementation. This includes a detailed exploration of any adjustable parameters or thresholds and an analysis of how these configurations impact the overall effectiveness of the cache policy.
+
+\subsubsection{Adaptability}
+Our study extends beyond a mere comparison of algorithms; we scrutinize the adaptability of the Size-Aware CLOCK policy under different scenarios and varying workload conditions. Specifically, we create a scenario where the input objects' sizes are changed drastically. This approach allows us to evaluate Size-Aware CLOCK's flexibility and responsiveness to changes in data access patterns and fluctuations in data size, which is one the most important targets that we designed the policies. By comparing Size-Aware CLOCK under this kind of scenario, we can easily tell the difference made by the size-aware layer and show that whether Size-Aware CLOCK has made its goals.
 
 \section*{References}
 
