@@ -43,8 +43,8 @@ struct Row {
   Row(long ts, VisitType t, const std::string &o, long l)
       : timestamp(ts), type(t), cache_key(o, l) {}
   void debug() const {
-    printf("%ld,%d,%s,%ld\n", timestamp, static_cast<int>(type),
-           cache_key.offset.c_str(), cache_key.length);
+    // printf("%ld,%d,%s,%ld\n", timestamp, static_cast<int>(type),
+    //        cache_key.offset.c_str(), cache_key.length);
   }
 };
 
@@ -96,7 +96,7 @@ void init_storage() {
     storage[row.cache_key.key] = std::string(row.cache_key.length, 'a');
   }
 
-  printf("generated storage, size:%ld\n", rows.size());
+  // printf("generated storage, size:%ld\n", rows.size());
 }
 
 struct Metrics {
