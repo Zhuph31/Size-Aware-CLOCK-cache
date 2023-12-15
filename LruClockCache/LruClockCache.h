@@ -9,7 +9,6 @@
 #define LRUCLOCKCACHE_H_
 
 #include <algorithm>
-#include <cstdlib>
 #include <functional>
 #include <mutex>
 #include <unordered_map>
@@ -39,11 +38,10 @@ public:
   //				example: [&](MyClass key, MyAnotherClass value){
   // redis.set(key,value); } 				takes a LruKey as key
   // and LruValue as value
-  LruClockCache(ClockHandInteger numElements, ClockHandInteger memLimit,
+  LruClockCache(ClockHandInteger numElements,
                 const std::function<LruValue(LruKey)> &readMiss,
                 const std::function<void(LruKey, LruValue)> &writeMiss)
-      : size(numElements), memLimit(memLimit), loadData(readMiss),
-        saveData(writeMiss) {
+      : size(numElements), loadData(readMiss), saveData(writeMiss) {
     ctr = 0;
     // 50% phase difference between eviction and second-chance hands of the
     // "second-chance" CLOCK algorithm
@@ -55,14 +53,12 @@ public:
     // initialize circular buffers
     for (ClockHandInteger i = 0; i < numElements; i++) {
       valueBuffer.push_back(LruValue());
-      valueMemUsage += valueBuffer.back().size();
       chanceToSurviveBuffer.push_back(0);
       isEditedBuffer.push_back(0);
       keyBuffer.push_back(LruKey());
     }
     mapping.reserve(numElements);
-
-    shouldAdopt = [](size_t) { return true; };
+    check_size = [](size_t) { return true; };
   }
 
   // get element from cache
@@ -70,10 +66,8 @@ public:
   // then cache gets data from backing-store
   // then returns the result to user
   // then cache is available from RAM on next get/set access with same key
-  inline const LruValue get(const LruKey &key) noexcept {
-    LruValue ret = accessClock2Hand(key, nullptr);
-    controlMemUsage();
-    return ret;
+  virtual inline const LruValue get(const LruKey &key) noexcept {
+    return accessClock2Hand(key, nullptr);
   }
 
   // only syntactic difference
@@ -131,61 +125,6 @@ public:
     }
   }
 
-  void controlMemUsage() {
-    // int evicts = 0;
-    while (valueMemUsage > memLimit) {
-      long long ctrFound = -1;
-      LruValue oldValue;
-      LruKey oldKey;
-      while (ctrFound == -1 || valueBuffer[ctrFound].size() == 0) {
-        // second-chance hand lowers the "chance" status down if its 1 but
-        // slot is saved from eviction 1 more chance to be in a cache-hit
-        // until eviction-hand finds this
-        if (chanceToSurviveBuffer[ctr] > 0) {
-          chanceToSurviveBuffer[ctr] = 0;
-        }
-
-        // circular buffer has no bounds
-        ctr++;
-        if (ctr >= size) {
-          ctr = 0;
-        }
-
-        // unlucky slot is selected for eviction by eviction hand
-        if (chanceToSurviveBuffer[ctrEvict] == 0) {
-          ctrFound = ctrEvict;
-          oldValue = valueBuffer[ctrFound];
-          oldKey = keyBuffer[ctrFound];
-        }
-
-        // circular buffer has no bounds
-        ctrEvict++;
-        if (ctrEvict >= size) {
-          ctrEvict = 0;
-        }
-      }
-
-      // printf("valueMemUsage:%lu, evict target size:%lu, limit:%ld\n",
-      //        valueMemUsage, valueBuffer[ctrFound].size(), memLimit);
-      // getchar();
-
-      mapping.erase(keyBuffer[ctrFound]);
-      valueMemUsage -= valueBuffer[ctrFound].size();
-      valueBuffer[ctrFound] = LruValue();
-      chanceToSurviveBuffer[ctrFound] = 0;
-      auto key = LruKey();
-      mapping.emplace(key, ctrFound);
-      keyBuffer[ctrFound] = key;
-
-      // ++evicts;
-    }
-
-    // if (evicts > 0) {
-    // printf("control mem usage, did %d evictions\n", evicts);
-    // getchar();
-    // }
-  }
-
   // CLOCK algorithm with 2 hand counters (1 for second chance for a cache slot
   // to survive, 1 for eviction of cache slot) opType=0: get opType=1: set
   LruValue const accessClock2Hand(const LruKey &key, const LruValue *value,
@@ -195,6 +134,7 @@ public:
     typename std::unordered_map<LruKey, ClockHandInteger>::iterator it =
         mapping.find(key);
     if (it != mapping.end()) {
+
       chanceToSurviveBuffer[it->second] = 1;
       if (opType == 1) {
         isEditedBuffer[it->second] = 1;
@@ -208,9 +148,9 @@ public:
       LruValue oldValue;
       LruKey oldKey;
       while (ctrFound == -1) {
-        // second-chance hand lowers the "chance" status down if its 1 but
-        // slot is saved from eviction 1 more chance to be in a cache-hit
-        // until eviction-hand finds this
+        // second-chance hand lowers the "chance" status down if its 1 but slot
+        // is saved from eviction 1 more chance to be in a cache-hit until
+        // eviction-hand finds this
         if (chanceToSurviveBuffer[ctr] > 0) {
           chanceToSurviveBuffer[ctr] = 0;
         }
@@ -247,17 +187,19 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
-          auto loadedDataSize = loadedData.size();
-          if (shouldAdopt(loadedDataSize) && loadedDataSize < memLimit) {
-            mapping.erase(keyBuffer[ctrFound]);
-            valueMemUsage -= valueBuffer[ctrFound].size();
-            valueMemUsage += loadedData.size();
-            valueBuffer[ctrFound] = loadedData;
-            chanceToSurviveBuffer[ctrFound] = 0;
-
-            mapping.emplace(key, ctrFound);
-            keyBuffer[ctrFound] = key;
+          if (!check_size(loadedData.size())) {
+            return loadedData;
           }
+
+          mem_consume -=
+              keyBuffer[ctrFound].size() + valueBuffer[ctrFound].size();
+          mem_consume += key.size() + loadedData.size();
+          mapping.erase(keyBuffer[ctrFound]);
+          valueBuffer[ctrFound] = loadedData;
+          chanceToSurviveBuffer[ctrFound] = 0;
+
+          mapping.emplace(key, ctrFound);
+          keyBuffer[ctrFound] = key;
 
           return loadedData;
         } else /* "set" */
@@ -281,17 +223,19 @@ public:
         // "get"
         if (opType == 0) {
           const LruValue &&loadedData = loadData(key);
-          auto loadedDataSize = loadedData.size();
-          if (shouldAdopt(loadedDataSize) && loadedDataSize < memLimit) {
-            mapping.erase(keyBuffer[ctrFound]);
-            valueMemUsage -= valueBuffer[ctrFound].size();
-            valueMemUsage += loadedData.size();
-            valueBuffer[ctrFound] = loadedData;
-            chanceToSurviveBuffer[ctrFound] = 0;
-
-            mapping.emplace(key, ctrFound);
-            keyBuffer[ctrFound] = key;
+          if (!check_size(loadedData.size())) {
+            return loadedData;
           }
+
+          mapping.erase(keyBuffer[ctrFound]);
+          mem_consume -=
+              keyBuffer[ctrFound].size() + valueBuffer[ctrFound].size();
+          mem_consume += key.size() + loadedData.size();
+          valueBuffer[ctrFound] = loadedData;
+          chanceToSurviveBuffer[ctrFound] = 0;
+
+          mapping.emplace(key, ctrFound);
+          keyBuffer[ctrFound] = key;
 
           return loadedData;
         } else // "set"
@@ -309,13 +253,12 @@ public:
     }
   }
 
-protected:
-  std::function<bool(size_t)> shouldAdopt;
+  size_t get_mem_consume() const { return mem_consume; }
 
-private:
+  size_t get_rejects() const { return rejects_; }
+
+protected:
   const ClockHandInteger size;
-  const ClockHandInteger memLimit;
-  size_t valueMemUsage = 0;
   std::mutex mut;
   std::unordered_map<LruKey, ClockHandInteger> mapping;
   std::vector<LruValue> valueBuffer;
@@ -326,6 +269,9 @@ private:
   const std::function<void(LruKey, LruValue)> saveData;
   ClockHandInteger ctr;
   ClockHandInteger ctrEvict;
+  size_t mem_consume = 0;
+  std::function<bool(size_t)> check_size;
+  size_t rejects_ = 0;
 };
 
 #endif /* LRUCLOCKCACHE_H_ */

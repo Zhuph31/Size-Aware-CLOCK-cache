@@ -46,8 +46,8 @@ struct Row {
   Row(long ts, VisitType t, const std::string &o, long l)
       : timestamp(ts), type(t), cache_key(o, l) {}
   void debug() const {
-    printf("%ld,%d,%s,%ld\n", timestamp, static_cast<int>(type),
-           cache_key.offset.c_str(), cache_key.length);
+    // printf("%ld,%d,%s,%ld\n", timestamp, static_cast<int>(type),
+    //        cache_key.offset.c_str(), cache_key.length);
   }
 };
 
@@ -96,28 +96,44 @@ void init_storage() {
       ++count;
       row.debug();
     }
-    std::string value =
-        FLAGS_real ? std::string(row.cache_key.length, 'a') : "true";
-    storage[row.cache_key.key] = value;
+    storage[row.cache_key.key] = std::string(row.cache_key.length, 'a');
   }
 
-  printf("generated storage, size:%ld\n", rows.size());
+  // printf("generated storage, size:%ld\n", rows.size());
 }
 
-std::pair<size_t, long long> test_basic_lru() {
-  cache::lru_cache<key_type, value_type> cache(FLAGS_cache_size,
-                                               FLAGS_cache_mem_limit, storage);
+struct Metrics {
+  size_t miss;
+  size_t tc;
+  size_t mem_consume;
+  size_t rejects;
+  Metrics() = delete;
+  Metrics(size_t m, size_t t, size_t mc, size_t r = 0)
+      : miss(m), tc(t), mem_consume(mc), rejects(r) {}
+  void print() const {
+    printf("miss:%lu, tc:%lu, mem consume:%lu, rejects:%lu\n", miss, tc,
+           mem_consume, rejects);
+  }
+};
+
+Metrics test_basic_lru() {
+  cache::lru_cache<key_type, value_type> cache(FLAGS_cache_size, storage);
+  size_t count = 0, mem_consume = 0;
 
   TimeCost tc;
   for (const Row &row : rows) {
-    cache.get(row.cache_key.key);
+    auto &val = cache.get(row.cache_key.key);
+    // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
+    mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
+    ++count;
   }
 
-  return {cache.get_miss(), tc.get_elapsed()};
+  return {cache.get_miss(), tc.get_elapsed(), mem_consume};
 }
 
-std::pair<size_t, long long> test_clock_lru() {
-  int miss = 0;
+Metrics test_clock_lru(bool my) {
+  size_t miss = 0;
+  size_t count = 0, mem_consume = 0;
   auto read_miss = [&](key_type key) {
     ++miss;
     return storage.at(key);
@@ -126,36 +142,35 @@ std::pair<size_t, long long> test_clock_lru() {
     storage[key] = value;
     exit(-1);
   };
-  LruClockCache<key_type, value_type> cache(
-      FLAGS_cache_size, FLAGS_cache_mem_limit, read_miss, write_miss);
 
-  TimeCost tc;
-  for (const Row &row : rows) {
-    cache.get(row.cache_key.key);
+  if (!my) {
+    LruClockCache<key_type, value_type> cache(FLAGS_cache_size, read_miss,
+                                              write_miss);
+
+    TimeCost tc;
+    for (const Row &row : rows) {
+      auto &val = cache.get(row.cache_key.key);
+      // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
+      mem_consume =
+          (mem_consume * count + cache.get_mem_consume()) / (count + 1);
+      ++count;
+    }
+
+    return {miss, tc.get_elapsed(), mem_consume};
+  } else {
+    MyClockCache<key_type, value_type> cache(FLAGS_alpha, FLAGS_cache_size,
+                                             read_miss, write_miss);
+
+    TimeCost tc;
+    for (const Row &row : rows) {
+      auto &val = cache.get(row.cache_key.key);
+      // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
+      mem_consume =
+          (mem_consume * count + cache.get_mem_consume()) / (count + 1);
+      ++count;
+    }
+    return {miss, tc.get_elapsed(), mem_consume, cache.get_rejects()};
   }
-
-  return {miss, tc.get_elapsed()};
-}
-
-std::pair<size_t, long long> test_my_clock() {
-  int miss = 0;
-  auto read_miss = [&](key_type key) {
-    ++miss;
-    return storage.at(key);
-  };
-  auto write_miss = [&](key_type key, value_type value) {
-    storage[key] = value;
-    exit(-1);
-  };
-  MyClockCache<key_type, value_type> cache(FLAGS_alpha, FLAGS_cache_size,
-                                           FLAGS_cache_mem_limit, read_miss,
-                                           write_miss);
-
-  TimeCost tc;
-  for (const Row &row : rows) {
-    cache.get(row.cache_key.key);
-  }
-  return {miss, tc.get_elapsed()};
 }
 
 int main(int argc, char *argv[]) {
@@ -163,15 +178,9 @@ int main(int argc, char *argv[]) {
 
   init_storage();
 
-  size_t miss;
-  long long cost;
-
-  std::tie(miss, cost) = test_basic_lru();
-  printf("basic lru, miss:%lu, cost:%lld\n", miss, cost);
-  std::tie(miss, cost) = test_clock_lru();
-  printf("clock lru, miss:%lu, cost:%lld\n", miss, cost);
-  std::tie(miss, cost) = test_my_clock();
-  printf("my lru, miss:%lu, cost:%lld\n", miss, cost);
+  test_basic_lru().print();
+  test_clock_lru(false).print();
+  test_clock_lru(true).print();
 
   return 0;
 }

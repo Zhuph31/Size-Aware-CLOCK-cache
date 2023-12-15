@@ -9,7 +9,7 @@ public:
   TimeCost() : start_time(std::chrono::high_resolution_clock::now()) {}
 
   // 获取自构造以来经过的毫秒数
-  long long get_elapsed() const {
+  size_t get_elapsed() const {
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         end_time - start_time);

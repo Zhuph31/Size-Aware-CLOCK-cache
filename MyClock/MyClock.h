@@ -8,6 +8,7 @@
 #ifndef MYCLOCKCACHE_H_
 #define MYCLOCKCACHE_H_
 
+#include "../LruClockCache/LruClockCache.h"
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -26,18 +27,22 @@ public:
       : alpha_(alpha), threshold_(0.0), initialized_(false) {}
 
   void update_threshold(double observation) {
+    // printf("observation:%lf, threshold:%lf\n", observation, threshold_);
     if (!initialized_) {
-      threshold_ = FLAGS_init_times * observation;
+      threshold_ = observation / 2;
       initialized_ = true;
       // printf("update threshold, initialize to %lf\n", threshold_);
     } else {
       threshold_ = alpha_ * observation + (1.0 - alpha_) * threshold_;
       // printf("update threshold, update to %lf\n", threshold_);
     }
+    // printf("update threshold to %lf\n", threshold_);
+    // getchar();
   }
 
-  // 获取当前阈值
-  inline double get_threshold() const { return threshold_; }
+  double get_threshold() const { return threshold_; }
+
+  bool initialized() const { return initialized_; }
 
 private:
   double alpha_;
@@ -47,28 +52,32 @@ private:
 
 template <typename LruKey, typename LruValue,
           typename ClockHandInteger = size_t>
-class MyClockCache : public LruClockCache<LruKey, LruValue, ClockHandInteger> {
+class MyClockCache : public LruClockCache<LruKey, LruValue> {
 public:
   MyClockCache(double alpha, ClockHandInteger numElements,
                ClockHandInteger memLimit,
                const std::function<LruValue(LruKey)> &readMiss,
                const std::function<void(LruKey, LruValue)> &writeMiss)
-      : threshold_(alpha), LruClockCache<LruKey, LruValue, ClockHandInteger>(
-                               numElements, memLimit, readMiss, writeMiss) {
-
-    this->shouldAdopt = [this](size_t size) {
-      // return true;
-      // printf("doing shoud adopt, input sizae:%lu, threashold:%lf, waiting for
-      // "
-      //  "input\n",
-      //  size, threshold_.get_threshold());
-      // getchar();
-      // bool ret = true;
-      bool ret = threshold_.get_threshold() < size;
-      // always update threshold
-      threshold_.update_threshold(size);
-      return ret;
+      : LruClockCache<LruKey, LruValue>(numElements, readMiss, writeMiss),
+        threshold_(alpha) {
+    this->check_size = [this](size_t s) {
+      if (!threshold_.initialized()) {
+        threshold_.update_threshold(s);
+      }
+      bool pass = s < threshold_.get_threshold();
+      if (!pass) {
+        ++this->rejects_;
+        // printf("reject, %lu vs %lf\n", s, threshold_.get_threshold());
+      }
+      return pass;
     };
+  }
+
+  inline const LruValue get(const LruKey &key) noexcept override {
+    LruValue value = this->accessClock2Hand(key, nullptr);
+    // always update threshold
+    threshold_.update_threshold(value.size());
+    return value;
   }
 
 private:
