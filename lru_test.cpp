@@ -10,10 +10,10 @@
 #include "basic_lru/lrucache.hpp"
 #include "utils.h"
 
-DEFINE_int64(storage_size, 10000, "");
-DEFINE_int64(iterations, 1000000, "");
-DEFINE_int64(cache_size, 1000, "");
-DEFINE_double(alpha, 0.2, "");
+// DEFINE_int64(storage_size, 10000, "");
+// DEFINE_int64(iterations, 1000000, "");
+// DEFINE_int64(cache_size, 1000, "");
+// DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
 
 using key_type = std::string;
@@ -58,13 +58,9 @@ void init_storage() {
   }
   std::string line;
 
-  rows.reserve(FLAGS_storage_size);
-
   long begin_ts = -1;
-  long count = 0;
 
-  while (count < FLAGS_storage_size && std::getline(file, line)) {
-    ++count;
+  while (std::getline(file, line)) {
 
     std::istringstream iss(line);
     std::string value;
@@ -109,12 +105,12 @@ struct Metrics {
   }
 };
 
-Metrics test_basic_lru() {
-  cache::lru_cache<key_type, value_type> cache(FLAGS_cache_size, storage);
+Metrics test_basic_lru(uint64_t iterations, uint64_t cache_size, double alpha) {
+  cache::lru_cache<key_type, value_type> cache(cache_size, storage);
   size_t count = 0, mem_consume = 0;
 
   TimeCost tc;
-  for (int i = 0; i < FLAGS_iterations; ++i) {
+  for (int i = 0; i < iterations; ++i) {
     const Row &row = rows[i % rows.size()];
     auto &val = cache.get(row.cache_key.key);
     // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
@@ -125,7 +121,8 @@ Metrics test_basic_lru() {
   return {cache.get_miss(), tc.get_elapsed(), mem_consume};
 }
 
-Metrics test_clock_lru(bool my) {
+Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
+                       double alpha) {
   size_t miss = 0;
   size_t count = 0, mem_consume = 0;
   auto read_miss = [&](key_type key) {
@@ -138,11 +135,11 @@ Metrics test_clock_lru(bool my) {
   };
 
   if (!my) {
-    LruClockCache<key_type, value_type> cache(FLAGS_cache_size, read_miss,
+    LruClockCache<key_type, value_type> cache(cache_size, read_miss,
                                               write_miss);
 
     TimeCost tc;
-    for (int i = 0; i < FLAGS_iterations; ++i) {
+    for (int i = 0; i < iterations; ++i) {
       const Row &row = rows[i % rows.size()];
       auto &val = cache.get(row.cache_key.key);
       // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
@@ -153,11 +150,11 @@ Metrics test_clock_lru(bool my) {
 
     return {miss, tc.get_elapsed(), mem_consume};
   } else {
-    MyClockCache<key_type, value_type> cache(FLAGS_alpha, FLAGS_cache_size,
-                                             read_miss, write_miss);
+    MyClockCache<key_type, value_type> cache(alpha, cache_size, read_miss,
+                                             write_miss);
 
     TimeCost tc;
-    for (int i = 0; i < FLAGS_iterations; ++i) {
+    for (int i = 0; i < iterations; ++i) {
       const Row &row = rows[i % rows.size()];
       auto &val = cache.get(row.cache_key.key);
       // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
@@ -174,9 +171,19 @@ int main(int argc, char *argv[]) {
 
   init_storage();
 
-  test_basic_lru().print();
-  test_clock_lru(false).print();
-  test_clock_lru(true).print();
+  std::vector<uint64_t> iteration_options = {1000000, 10000000, 100000000};
+  std::vector<uint64_t> cache_size_options = {1000, 10000, 100000};
+  std::vector<double> alpha_options = {0.2, 0.4, 0.6, 0.8};
+
+  for (uint64_t iteratinos : iteration_options) {
+    for (uint64_t cache_size : cache_size_options) {
+      test_basic_lru(iteratinos, cache_size, 0).print();
+      test_clock_lru(false, iteratinos, cache_size, 0).print();
+      for (uint64_t alpha : alpha_options) {
+        test_clock_lru(true, iteratinos, cache_size, alpha).print();
+      }
+    }
+  }
 
   return 0;
 }
