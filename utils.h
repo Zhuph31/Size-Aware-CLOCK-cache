@@ -6,10 +6,8 @@
 
 class TimeCost {
 public:
-  // 构造函数，记录当前时间
   TimeCost() : start_time(std::chrono::high_resolution_clock::now()) {}
 
-  // 获取自构造以来经过的毫秒数
   size_t get_elapsed() const {
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -22,17 +20,13 @@ private:
 };
 
 inline std::string generateRandomString() {
-  // 定义字符集
   const std::string charset =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-  // 使用 C++11 的随机数引擎
   std::default_random_engine randomEngine(std::random_device{}());
 
-  // 使用字符集定义字符分布
   std::uniform_int_distribution<int> distribution(0, charset.size() - 1);
 
-  // 生成随机字符串
   std::string randomString;
   int length = distribution(randomEngine);
 
