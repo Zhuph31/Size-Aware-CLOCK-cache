@@ -103,6 +103,10 @@ struct Metrics {
     //        mem_consume, rejects);
     printf("%lu %lu %lu %lu ", miss, tc, mem_consume, rejects);
   }
+
+  std::string to_string() const {
+    return string_printf("%lu %lu %lu %lu ", miss, tc, mem_consume, rejects);
+  }
 };
 
 Metrics test_basic_lru(uint64_t iterations, uint64_t cache_size, double alpha) {
@@ -171,16 +175,23 @@ int main(int argc, char *argv[]) {
 
   init_storage();
 
-  std::vector<uint64_t> iteration_options = {1000000, 10000000, 100000000};
+  std::vector<uint64_t> iteration_options = {1000000};
+  // std::vector<uint64_t> iteration_options = {100};
   std::vector<uint64_t> cache_size_options = {1000, 10000, 100000};
   std::vector<double> alpha_options = {0.2, 0.4, 0.6, 0.8};
 
-  for (uint64_t iteratinos : iteration_options) {
+  for (uint64_t iterations : iteration_options) {
     for (uint64_t cache_size : cache_size_options) {
-      test_basic_lru(iteratinos, cache_size, 0).print();
-      test_clock_lru(false, iteratinos, cache_size, 0).print();
-      for (uint64_t alpha : alpha_options) {
-        test_clock_lru(true, iteratinos, cache_size, alpha).print();
+      printf("0 %lu %lu -1 %s\n", iterations, cache_size,
+             test_basic_lru(iterations, cache_size, 0).to_string().c_str());
+      printf(
+          "1 %lu %lu -1 %s\n", iterations, cache_size,
+          test_clock_lru(false, iterations, cache_size, 0).to_string().c_str());
+      for (double alpha : alpha_options) {
+        printf("2 %lu %lu %lf %s\n", iterations, cache_size, alpha,
+               test_clock_lru(true, iterations, cache_size, alpha)
+                   .to_string()
+                   .c_str());
       }
     }
   }

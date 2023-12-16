@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 # file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "./*.cpp")
 # add_executable(force_calculator main.cpp ${SOURCES})
-add_executable(lru_cache lru_test.cpp)
+add_executable(lru_cache lru_test.cpp utils.cpp)
 
 add_compile_options(-Wno-sign-compare)
 

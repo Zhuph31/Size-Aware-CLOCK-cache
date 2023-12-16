@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
 #include <random>
+#include <stdarg.h>
 #include <string>
 
 class TimeCost {
@@ -41,3 +42,5 @@ inline std::string generateRandomString() {
 
   return randomString;
 }
+
+std::string string_printf(const char *format, ...);
