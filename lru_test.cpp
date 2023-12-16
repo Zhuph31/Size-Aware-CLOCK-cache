@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
 
   init_storage();
 
-  std::vector<uint64_t> iteration_options = {10000000};
+  std::vector<uint64_t> iteration_options = {5000000, 50000000};
   // std::vector<uint64_t> iteration_options = {100};
   std::vector<uint64_t> cache_size_options = {1000, 10000, 100000};
   std::vector<double> alpha_options = {0.2, 0.4, 0.6, 0.8};
