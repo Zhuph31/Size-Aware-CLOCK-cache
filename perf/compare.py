@@ -1,9 +1,6 @@
 from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib
-
-matplotlib.use("Agg")
 
 
 class Candidate:
@@ -84,8 +81,8 @@ def plot_data(file):
             for candidate in candidates:
                 categories.append(str(candidate.type))
                 if categories[-1] == "2":
-                    categories[-1] += "-" + str(candidate.alpha)
-                miss.append(candidate.miss)
+                    categories[-1] += "-" + str(candidate.alpha).rstrip("0")
+                miss.append(float(candidate.miss))
 
             print(categories)
             print(miss)
@@ -93,9 +90,16 @@ def plot_data(file):
             bar_width = 0.35
 
             bar1 = np.arange(len(categories))
-            bar2 = [x + bar_width for x in bar1]
 
-            plt.bar(bar1, miss, color="blue", width=bar_width, label="Miss Percent")
+            plt.bar(
+                bar1,
+                miss,
+                color="blue",
+                width=bar_width,
+                label="Miss Percent",
+                bottom=0,
+            )
+            plt.ylim(0, 100)
 
             plt.title("Miss Percent")
             plt.xlabel("Categories")
@@ -103,6 +107,7 @@ def plot_data(file):
             plt.xticks([r + bar_width / 2 for r in range(len(categories))], categories)
 
             plt.legend()
+            plt.show()
             plt.savefig("perf1-miss")
 
 
