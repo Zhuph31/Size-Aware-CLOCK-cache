@@ -160,7 +160,7 @@ def plot_mem_record(file):
     plt.ylabel("Memory Usage (bytes)")
 
     plt.legend()
-    plt.show()
+    plt.savefig("mem_records")
 
 
 if __name__ == "__main__":

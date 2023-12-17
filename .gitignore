@@ -11,3 +11,4 @@ perf/tc
 perf/miss
 perf/rej
 perf/full res
+perf/mem_records.png

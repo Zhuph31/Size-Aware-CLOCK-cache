@@ -3,6 +3,7 @@
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
+\usepackage[export]{adjustbox} 
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
@@ -138,7 +139,7 @@ For a cache policy, the most important aspect is its ability to cache objects, w
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.6\textwidth]{pic/1000000-1000-miss}
+    \includegraphics[width=0.5\textwidth]{pic/1000000-1000-miss}
     \caption{Object Miss Ratio}
     % \label{fig:sample}
 \end{figure}
@@ -153,7 +154,7 @@ We also pay attention to the time cost of the whole experiment process, which is
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.6\textwidth]{pic/1000000-1000-tc}
+    \includegraphics[width=0.5\textwidth]{pic/1000000-1000-tc}
     \caption{Time Cost}
     % \label{fig:sample}
 \end{figure}
@@ -162,6 +163,26 @@ From the figure we can see that, our SA-CLOCK is a little slower than the LRU po
 
 
 \subsubsection{Memory Usage}
+The most important aspect that our Size Aware CLOCK address is the memory usage of the cache. Based on CLOCK, whose implementation is simpler and is more memory efficient, our Size Aware CLOCK future manage memory usage by adding the size aware adoption policy. Therefore, we hope our Size-Aware CLOCK can significantly reduce memory usage. Figure 3 shows the average memory usage of each type of cache policy throughout the experiment process. Figure 4 shows the memory usage curve for each type of cache policy.
+
+\begin{figure}[h]
+\centerline{\includegraphics[width=0.5\textwidth]{pic/1000000-1000-mem}}
+\caption{Average Memory Usage}
+\label{fig}
+\end{figure}
+
+\begin{figure}[h]
+\centerline{\includegraphics[width=0.5\textwidth]{pic/mem_records.png}}
+\caption{Memory Usage Curve}
+\label{fig}
+\end{figure}
+
+From figure 3, we can see that the average memory usage of LRU and CLOCK are very close. This is reasonable because they will always adopt any object given to them since neither of them has any policies that will reject an object. The nuanced difference is caused by the difference between their eviction policy, where LRU will evict precisely the least recent used algorithm, while CLOCK may be not so precise due to the clock structure it used. Compared to these two baseline models, SA-CLOCK has a much smaller memory usage in average. It only consume less than 32 percent of the memory used by the other two baseline models. This result shows that our SA-CLOCK can indeed reduce the memory usage in recency based cache algorithm by a lot.  
+From figure 4, we can see the memory usage curve for each type of cache policy throughout the experiment process. Again, LRU and CLOCK have almost identical curves since they are very much alike in relation to memory usage. Our SA-CLOCK has kept a much smaller memory usage throughout the entire experiment. What is more, LRU and CLOCK both have a lot of peaks where the memory usage goes up drastically and then go back to average level. SA-CLOCK only has 2 peaks throughout the entire experiment. Memory usage peaks can be really harmful in production environments, where errors like OOM or decrease in performance due to memory recollection can happen and harm the application's overall stability. With much less memory peaks, our SA-CLOCK can help applications achieve better performance and stability in production environments.
+
+
+
+
 
 
 \section*{References}
