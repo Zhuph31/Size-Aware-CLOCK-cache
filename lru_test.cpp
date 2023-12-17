@@ -15,6 +15,7 @@
 // DEFINE_int64(cache_size, 1000, "");
 // DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
+DEFINE_int32(record_mem, 0, "");
 
 using key_type = std::string;
 using value_type = std::string;
@@ -50,6 +51,7 @@ struct Row {
 
 std::vector<Row> rows;
 std::unordered_map<std::string /* offset */, std::string> storage;
+std::vector<size_t> mem_records;
 
 void init_storage() {
   std::ifstream file(FLAGS_file);
@@ -111,15 +113,18 @@ struct Metrics {
 
 Metrics test_basic_lru(uint64_t iterations, uint64_t cache_size, double alpha) {
   cache::lru_cache<key_type, value_type> cache(cache_size, storage);
-  size_t count = 0, mem_consume = 0;
+  size_t mem_consume = 0;
 
   TimeCost tc;
   for (int i = 0; i < iterations; ++i) {
     const Row &row = rows[i % rows.size()];
     auto &val = cache.get(row.cache_key.key);
     // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
-    mem_consume = (mem_consume * count + cache.get_mem_consume()) / (count + 1);
-    ++count;
+    size_t cur_mem_consum = cache.get_mem_consume();
+    mem_consume = (mem_consume * i + cur_mem_consum) / (i + 1);
+    if (FLAGS_record_mem > 0 && i % FLAGS_record_mem == 0) {
+      mem_records.emplace_back(cur_mem_consum);
+    }
   }
 
   return {cache.get_miss(), tc.get_elapsed(), mem_consume};
@@ -128,7 +133,7 @@ Metrics test_basic_lru(uint64_t iterations, uint64_t cache_size, double alpha) {
 Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
                        double alpha) {
   size_t miss = 0;
-  size_t count = 0, mem_consume = 0;
+  size_t mem_consume = 0;
   auto read_miss = [&](key_type key) {
     ++miss;
     return storage.at(key);
@@ -147,9 +152,11 @@ Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
       const Row &row = rows[i % rows.size()];
       auto &val = cache.get(row.cache_key.key);
       // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
-      mem_consume =
-          (mem_consume * count + cache.get_mem_consume()) / (count + 1);
-      ++count;
+      size_t cur_mem_consum = cache.get_mem_consume();
+      mem_consume = (mem_consume * i + cur_mem_consum) / (i + 1);
+      if (FLAGS_record_mem > 0 && i % FLAGS_record_mem == 0) {
+        mem_records.emplace_back(cur_mem_consum);
+      }
     }
 
     return {miss, tc.get_elapsed(), mem_consume};
@@ -162,9 +169,11 @@ Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
       const Row &row = rows[i % rows.size()];
       auto &val = cache.get(row.cache_key.key);
       // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
-      mem_consume =
-          (mem_consume * count + cache.get_mem_consume()) / (count + 1);
-      ++count;
+      size_t cur_mem_consum = cache.get_mem_consume();
+      mem_consume = (mem_consume * i + cur_mem_consum) / (i + 1);
+      if (FLAGS_record_mem > 0 && i % FLAGS_record_mem == 0) {
+        mem_records.emplace_back(cur_mem_consum);
+      }
     }
     return {miss, tc.get_elapsed(), mem_consume, cache.get_rejects()};
   }
@@ -175,26 +184,46 @@ int main(int argc, char *argv[]) {
 
   init_storage();
 
-  std::vector<uint64_t> iteration_options = {5000000, 50000000};
-  // std::vector<uint64_t> iteration_options = {100};
-  std::vector<uint64_t> cache_size_options = {1000, 10000, 100000};
-  std::vector<double> alpha_options = {0.2, 0.4, 0.6, 0.8};
+  std::vector<uint64_t> iteration_options = {1000000};
+  std::vector<uint64_t> cache_size_options = {1000};
+  std::vector<double> alpha_options = {0.1};
+  std::vector<size_t> lru_mem_records, clock_mem_records, sa_clock_mem_records;
 
   for (uint64_t iterations : iteration_options) {
     for (uint64_t cache_size : cache_size_options) {
       printf("0 %lu %lu -1 %s\n", iterations, cache_size,
              test_basic_lru(iterations, cache_size, 0).to_string().c_str());
+      lru_mem_records = mem_records;
+
       printf(
           "1 %lu %lu -1 %s\n", iterations, cache_size,
           test_clock_lru(false, iterations, cache_size, 0).to_string().c_str());
+      clock_mem_records = mem_records;
+
       for (double alpha : alpha_options) {
         printf("2 %lu %lu %lf %s\n", iterations, cache_size, alpha,
                test_clock_lru(true, iterations, cache_size, alpha)
                    .to_string()
                    .c_str());
+        sa_clock_mem_records = mem_records;
       }
     }
   }
+
+  std::ofstream outputFile("mem_records");
+  for (const size_t each : lru_mem_records) {
+    outputFile << each << " ";
+  }
+  outputFile << "\n";
+  for (const size_t each : clock_mem_records) {
+    outputFile << each << " ";
+  }
+  outputFile << "\n";
+  for (const size_t each : sa_clock_mem_records) {
+    outputFile << each << " ";
+  }
+  outputFile << "\n";
+  outputFile.close();
 
   return 0;
 }
