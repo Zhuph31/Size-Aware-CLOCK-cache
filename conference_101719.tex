@@ -121,6 +121,49 @@ In addition to assessing the Size-Aware CLOCK algorithm's performance, we delve 
 \subsubsection{Adaptability}
 Our study extends beyond a mere comparison of algorithms; we scrutinize the adaptability of the Size-Aware CLOCK policy under different scenarios and varying workload conditions. Specifically, we create a scenario where the input objects' sizes are changed drastically. This approach allows us to evaluate Size-Aware CLOCK's flexibility and responsiveness to changes in data access patterns and fluctuations in data size, which is one the most important targets that we designed the policies. By comparing Size-Aware CLOCK under this kind of scenario, we can easily tell the difference made by the size-aware layer and show that whether Size-Aware CLOCK has made its goals.
 
+
+\section{Evaluation Results}
+In this section, we will show the evaluation results of Size-Aware CLOCK, as well as giving detailed explanation to the results.
+
+\subsection{Performance Evaluation}
+In this section, we focus on the performance of our Size-Aware CLOCK, including aspects like object hit ratio, performance respect to time cost, and memory consumption.
+
+\subsubsection{Experiments Setup}
+As mentioned in previous sections, we use real world traces posted by Microsoft Research Team as the input. For each item in the trace, a string with the specified length will be generated into a in-memory data structure, which serves as a global storage. In the meantime, the file name and the offset in the file combined are used as the key, which is later used for searching this object in the cache and the storage. 
+When the experiments start, we start to range over the items in the traces and for each item, a get request is generated to try to get the result from the cache. If the get request succeeds, we will move onto the next item. Otherwise, we will get the real object from the global storage and generate an add request to try to add the object into the cache. For LRU and CLOCK, this object should be added into the cache, while SA-CLOCK will make judgement base on the size of the object.
+For each experiment, we tried different combination of storage size and cache size. However, the results do not vary too much, therefore we only present some of the results as they can well represent the evaluation outcomes. Here we choose a storage size of 1,000,000 and a cache size of 1,000.
+
+\subsubsection{Cache Miss Count}
+For a cache policy, the most important aspect is its ability to cache objects, which can be reflected by Object Hit Ratio. Here we record the number of cache miss during the experiment and calculate the Miss Ratio. Figure 1 shows the results for LRU, CLOCK and our SA-CLOCK. 
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{pic/1000000-1000-miss}
+    \caption{Object Miss Ratio}
+    % \label{fig:sample}
+\end{figure}
+
+From the figure you can see that our SA-CLOCK is slightly worse than LRU and CLOCK, with about 2.4 percent. This shows that our SA-CLOCK is worse than the other two baseline policies respect to object hit.
+1. conduct more experiment to answer this question
+2. say that the decline is very small and could possibly be ignored
+
+
+\subsubsection{Time Cost}
+We also pay attention to the time cost of the whole experiment process, which is the time used to send the 1,000,000 get requests and possible add requests. One thing worth noticing is that with this evaluation strategy, there will be more add requests if there are more misses, which means that our SA-CLOCK actually has an inherent disadvantage in the test of time cost. Figure 2 shows the time used by each policy in milliseconds.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{pic/1000000-1000-tc}
+    \caption{Time Cost}
+    % \label{fig:sample}
+\end{figure}
+
+From the figure we can see that, our SA-CLOCK is a little slower than the LRU policy. However, when compared to the CLOCK policy, our SA-CLOCK has a great improvement. The overall time cost is reduced by 461 milliseconds, which is 28.3 percent. Since our SA-CLOCK is designed and implemented entirely based on CLOCK, this reduction in time cost shows that the size-aware admission policy significantly improved the cache's performance in relation to time efficiency. We believe that this is due to the fact that our SA-CLOCK rejects a number of objects that are too big, which in turn reduced the time spent on going around the clock structure used to keep track of recency information. In the meantime, this also means that the disadvantage compared to LRU can be explained by the nature of CLOCK-based algorithm, which is naturally slower than LRU.
+
+
+\subsubsection{Memory Usage}
+
+
 \section*{References}
 
 Please number citations consecutively within brackets \cite{b1}. The
