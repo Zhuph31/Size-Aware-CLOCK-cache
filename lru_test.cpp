@@ -16,6 +16,7 @@
 // DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
 DEFINE_int32(record_mem, 0, "");
+DEFINE_bool(record_input, false, "");
 
 using key_type = std::string;
 using value_type = std::string;
@@ -183,6 +184,18 @@ int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   init_storage();
+
+  if (FLAGS_record_input) {
+    std::ofstream of("input_size");
+    for (int i = 0; i < 1000000; ++i) {
+      const Row &row = rows[i % rows.size()];
+      auto &val = storage.at(row.cache_key.key);
+      size_t val_size = val.size();
+      of << val_size << " ";
+    }
+    of.close();
+    return 0;
+  }
 
   std::vector<uint64_t> iteration_options = {1000000};
   std::vector<uint64_t> cache_size_options = {1000};
