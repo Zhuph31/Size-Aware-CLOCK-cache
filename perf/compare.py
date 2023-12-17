@@ -32,6 +32,8 @@ def read_data(file):
             iterations = res[1]
             cache_size = res[2]
             alpha = res[3]
+            if float(alpha) > 0.2:
+                continue
             miss = res[4]
             tc = res[5]
             mem = res[6]
@@ -67,49 +69,104 @@ def sort_data():
             )
 
 
+def plot_val(iterations, cache_size, candidates, type):
+    print(type)
+    val = []
+    categories = []
+    label = ""
+
+    if type == "miss":
+        label = "Miss Percent"
+        plt.ylim(20, 60)
+        plt.ylabel("Percentage")
+    elif type == "mem":
+        label = "Memory Usage"
+        plt.ylabel("Bytes")
+    elif type == "tc":
+        label = "Time Cost"
+    elif type == "rej":
+        label = "Rejections"
+
+    for candidate in candidates:
+        if candidate.type == "0":
+            categories.append("LRU")
+        elif candidate.type == "1":
+            categories.append("CLOCK")
+        else:
+            categories.append("SA-CLOCK")
+        if type == "miss":
+            val.append(float(candidate.miss))
+        elif type == "mem":
+            val.append(int(candidate.mem))
+        elif type == "tc":
+            val.append(int(candidate.tc))
+        elif type == "rej":
+            val.append(int(candidate.rej))
+
+    print(categories)
+    print(val)
+
+    bar_width = 0.35
+
+    bar1 = np.arange(len(categories))
+
+    plt.bar(bar1, val, color="blue", width=bar_width, bottom=0, align="center")
+    for i, value in enumerate(val):
+        plt.text(i, value + 0.5, str(value), ha="center", va="bottom")
+    print(plt.ylim())
+
+    plt.title(label)
+    # plt.xlabel("Categories")
+    plt.xticks([r for r in range(len(categories))], categories)
+
+    # plt.legend()
+    # plt.show()
+    plt.savefig("{}/{}-{}-{}".format(type, iterations, cache_size, type))
+    plt.clf()
+
+
 def plot_data(file):
     perf_data = read_data(file)
     for iterations, iter_val in perf_data.items():
         for cache_size, candidates in iter_val.items():
-            miss = []
-            mem = []
-            rej = []
-            tc = []
+            plot_val(iterations, cache_size, candidates, "miss")
+            plot_val(iterations, cache_size, candidates, "mem")
+            plot_val(iterations, cache_size, candidates, "tc")
+            plot_val(iterations, cache_size, candidates, "rej")
 
-            # plot miss
-            categories = []
-            for candidate in candidates:
-                categories.append(str(candidate.type))
-                if categories[-1] == "2":
-                    categories[-1] += "-" + str(candidate.alpha).rstrip("0")
-                miss.append(float(candidate.miss))
 
-            print(categories)
-            print(miss)
+def plot_mem_record(file):
+    with open(file, "r") as file:
+        data_lines = file.readlines()
 
-            bar_width = 0.35
+    print(len(data_lines))
 
-            bar1 = np.arange(len(categories))
+    data1 = list(map(int, data_lines[0].split()))
+    data2 = list(map(int, data_lines[1].split()))
+    data3 = list(map(int, data_lines[2].split()))
+    print(len(data1))
+    print(len(data2))
+    print(len(data3))
 
-            plt.bar(
-                bar1,
-                miss,
-                color="blue",
-                width=bar_width,
-                label="Miss Percent",
-                bottom=0,
-            )
-            plt.ylim(0, 100)
+    x_values = list(range(len(data1)))
+    print(len(x_values))
 
-            plt.title("Miss Percent")
-            plt.xlabel("Categories")
-            plt.ylabel("Percentage")
-            plt.xticks([r + bar_width / 2 for r in range(len(categories))], categories)
+    plt.plot(x_values, data1, label="LRU")
+    plt.plot(x_values, data2, label="CLOCK")
+    plt.plot(x_values, data3, label="SA-CLOCK")
 
-            plt.legend()
-            plt.show()
-            plt.savefig("perf1-miss")
+    plt.title("Memory Usage Over Time")
+    plt.xlabel("Time")
+    plt.ylabel("Memory Usage (bytes)")
+
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
-    plot_data("perf1")
+    # plot_data("perf1")
+    # plot_data("perf2")
+    # plot_data("perf3")
+    # plot_data("perf4")
+    # plot_data("perf.1")
+    plot_mem_record("mem_records")

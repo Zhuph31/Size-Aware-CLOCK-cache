@@ -5,3 +5,9 @@ traces
 
 .cache
 hm*
+
+perf/mem
+perf/tc
+perf/miss
+perf/rej
+perf/full res
