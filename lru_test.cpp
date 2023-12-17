@@ -194,11 +194,13 @@ int main(int argc, char *argv[]) {
       printf("0 %lu %lu -1 %s\n", iterations, cache_size,
              test_basic_lru(iterations, cache_size, 0).to_string().c_str());
       lru_mem_records = mem_records;
+      mem_records.clear();
 
       printf(
           "1 %lu %lu -1 %s\n", iterations, cache_size,
           test_clock_lru(false, iterations, cache_size, 0).to_string().c_str());
       clock_mem_records = mem_records;
+      mem_records.clear();
 
       for (double alpha : alpha_options) {
         printf("2 %lu %lu %lf %s\n", iterations, cache_size, alpha,
@@ -206,6 +208,7 @@ int main(int argc, char *argv[]) {
                    .to_string()
                    .c_str());
         sa_clock_mem_records = mem_records;
+        mem_records.clear();
       }
     }
   }
