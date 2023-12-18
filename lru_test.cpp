@@ -15,6 +15,7 @@
 // DEFINE_int64(cache_size, 1000, "");
 // DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
+DEFINE_uint64(storage_size, 1000000, "");
 DEFINE_int32(record_mem, 0, "");
 DEFINE_int32(record_threshold, 0, "");
 DEFINE_int32(record_rej, 0, "");
@@ -67,7 +68,8 @@ long gen_fake_len() {
   static long count = 0;
   static bool small = true;
   ++count;
-  if (count % 25000 == 0) {
+  if (count % (FLAGS_storage_size / 4) == 0 ||
+      count % (FLAGS_storage_size / 4 + FLAGS_storage_size / 20) == 0) {
     small = !small;
   }
 
@@ -91,7 +93,7 @@ void init_storage() {
   long begin_ts = -1;
   int count = 0;
 
-  while (std::getline(file, line) && ++count < 100000) {
+  while (std::getline(file, line) && ++count < FLAGS_storage_size) {
     std::istringstream iss(line);
     std::string value;
     std::vector<std::string> values;
@@ -221,7 +223,7 @@ int main(int argc, char *argv[]) {
 
   if (FLAGS_record_input) {
     std::ofstream of("input_size");
-    for (int i = 0; i < 100000; ++i) {
+    for (int i = 0; i < FLAGS_storage_size; ++i) {
       if (i % 100 != 0) {
         continue;
       }
@@ -234,7 +236,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::vector<uint64_t> iteration_options = {100000};
+  std::vector<uint64_t> iteration_options = {FLAGS_storage_size};
   std::vector<uint64_t> cache_size_options = {1000};
   std::vector<double> alpha_options = {0.1};
   std::vector<size_t> lru_mem_records, clock_mem_records, sa_clock_mem_records;
