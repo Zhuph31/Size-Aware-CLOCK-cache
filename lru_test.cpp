@@ -67,7 +67,7 @@ long gen_fake_len() {
   static long count = 0;
   static bool small = true;
   ++count;
-  if (count % 250000 == 0) {
+  if (count % 25000 == 0) {
     small = !small;
   }
 
