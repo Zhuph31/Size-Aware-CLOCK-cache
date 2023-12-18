@@ -222,6 +222,9 @@ int main(int argc, char *argv[]) {
   if (FLAGS_record_input) {
     std::ofstream of("input_size");
     for (int i = 0; i < 100000; ++i) {
+      if (i % 100 != 0) {
+        continue;
+      }
       const Row &row = rows[i % rows.size()];
       auto &val = storage.at(row.cache_key.key);
       size_t val_size = val.size();
