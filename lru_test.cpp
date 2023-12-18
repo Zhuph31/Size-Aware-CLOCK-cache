@@ -265,40 +265,40 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  {
-    std::ofstream outputFile("mem_records");
-    for (const size_t each : lru_mem_records) {
-      outputFile << each << " ";
-    }
-    outputFile << "\n";
-    for (const size_t each : clock_mem_records) {
-      outputFile << each << " ";
-    }
-    outputFile << "\n";
-    for (const size_t each : sa_clock_mem_records) {
-      outputFile << each << " ";
-    }
-    outputFile << "\n";
-    outputFile.close();
-  }
+  // {
+  //   std::ofstream outputFile("mem_records");
+  //   for (const size_t each : lru_mem_records) {
+  //     outputFile << each << " ";
+  //   }
+  //   outputFile << "\n";
+  //   for (const size_t each : clock_mem_records) {
+  //     outputFile << each << " ";
+  //   }
+  //   outputFile << "\n";
+  //   for (const size_t each : sa_clock_mem_records) {
+  //     outputFile << each << " ";
+  //   }
+  //   outputFile << "\n";
+  //   outputFile.close();
+  // }
 
-  {
-    std::ofstream outputFile("rej_records");
-    for (const size_t each : rej_records) {
-      outputFile << each << " ";
-    }
-    outputFile << "\n";
-    outputFile.close();
-  }
+  // {
+  //   std::ofstream outputFile("rej_records");
+  //   for (const size_t each : rej_records) {
+  //     outputFile << each << " ";
+  //   }
+  //   outputFile << "\n";
+  //   outputFile.close();
+  // }
 
-  {
-    std::ofstream outputFile("threshod_records");
-    for (const size_t each : threshold_records) {
-      outputFile << each << " ";
-    }
-    outputFile << "\n";
-    outputFile.close();
-  }
+  // {
+  //   std::ofstream outputFile("threshod_records");
+  //   for (const size_t each : threshold_records) {
+  //     outputFile << each << " ";
+  //   }
+  //   outputFile << "\n";
+  //   outputFile.close();
+  // }
 
   return 0;
 }
