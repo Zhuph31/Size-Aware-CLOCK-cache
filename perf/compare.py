@@ -156,11 +156,36 @@ def plot_mem_record(file):
     plt.plot(x_values, data3, label="SA-CLOCK")
 
     plt.title("Memory Usage Over Time")
-    plt.xlabel("Time")
+    # plt.xlabel("Time")
+    plt.xticks([])
     plt.ylabel("Memory Usage (bytes)")
 
     plt.legend()
     plt.savefig("mem_records")
+
+
+def plot_curve(file):
+    with open(file, "r") as file:
+        data_lines = file.readlines()
+
+    print(len(data_lines))
+
+    data1 = list(map(int, data_lines[0].split()))
+    # data1 = data1[::1000]
+
+    print(len(data1))
+
+    x_values = list(range(len(data1)))
+    print(len(x_values))
+
+    plt.plot(x_values, data1)
+
+    plt.title("Input SIze")
+    plt.ylabel("Object Size (bytes)")
+    # plt.xticks([])
+
+    # plt.legend()
+    plt.savefig("fake_input2")
 
 
 if __name__ == "__main__":
@@ -169,4 +194,6 @@ if __name__ == "__main__":
     # plot_data("perf3")
     # plot_data("perf4")
     # plot_data("perf.1")
-    plot_mem_record("mem_records")
+    # plot_mem_record("mem_records")
+    # plot_input_size("input_size")
+    plot_curve("fake2")
