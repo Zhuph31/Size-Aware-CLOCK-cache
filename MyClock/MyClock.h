@@ -59,6 +59,7 @@ public:
       bool pass = s < threshold_.get_threshold();
       if (!pass) {
         ++this->rejects_;
+        last_rej_size_ = s;
         // printf("reject, %lu vs %lf\n", s, threshold_.get_threshold());
       }
       return pass;
@@ -72,8 +73,13 @@ public:
     return value;
   }
 
+  double get_threshold() const { return threshold_.get_threshold(); }
+
+  size_t get_rej_size() const { return last_rej_size_; }
+
 private:
   ExponentialSmoothedThreshold threshold_;
+  size_t last_rej_size_ = 0;
 };
 
 #endif /* MYCLOCKCACHE_H_ */

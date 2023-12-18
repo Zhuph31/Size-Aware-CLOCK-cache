@@ -16,6 +16,8 @@
 // DEFINE_double(alpha, 0.2, "");
 DEFINE_string(file, "hm_0.csv", "");
 DEFINE_int32(record_mem, 0, "");
+DEFINE_int32(record_threshold, 0, "");
+DEFINE_int32(record_rej, 0, "");
 DEFINE_bool(record_input, false, "");
 
 using key_type = std::string;
@@ -53,6 +55,8 @@ struct Row {
 std::vector<Row> rows;
 std::unordered_map<std::string /* offset */, std::string> storage;
 std::vector<size_t> mem_records;
+std::vector<size_t> threshold_records;
+std::vector<size_t> rej_records;
 
 void init_storage() {
   std::ifstream file(FLAGS_file);
@@ -175,6 +179,12 @@ Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
       if (FLAGS_record_mem > 0 && i % FLAGS_record_mem == 0) {
         mem_records.emplace_back(cur_mem_consum);
       }
+      if (FLAGS_record_threshold > 0 && i % FLAGS_record_threshold == 0) {
+        threshold_records.emplace_back(cache.get_threshold());
+      }
+      if (FLAGS_record_rej > 0 && i % FLAGS_record_rej == 0) {
+        rej_records.emplace_back(cache.get_rej_size());
+      }
     }
     return {miss, tc.get_elapsed(), mem_consume, cache.get_rejects()};
   }
@@ -226,20 +236,40 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  std::ofstream outputFile("mem_records");
-  for (const size_t each : lru_mem_records) {
-    outputFile << each << " ";
+  {
+    std::ofstream outputFile("mem_records");
+    for (const size_t each : lru_mem_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    for (const size_t each : clock_mem_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    for (const size_t each : sa_clock_mem_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    outputFile.close();
   }
-  outputFile << "\n";
-  for (const size_t each : clock_mem_records) {
-    outputFile << each << " ";
+
+  {
+    std::ofstream outputFile("rej_records");
+    for (const size_t each : rej_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    outputFile.close();
   }
-  outputFile << "\n";
-  for (const size_t each : sa_clock_mem_records) {
-    outputFile << each << " ";
+
+  {
+    std::ofstream outputFile("threshod_records");
+    for (const size_t each : threshold_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    outputFile.close();
   }
-  outputFile << "\n";
-  outputFile.close();
 
   return 0;
 }
