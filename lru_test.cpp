@@ -17,10 +17,11 @@
 DEFINE_string(file, "hm_0.csv", "");
 DEFINE_uint64(storage_size, 1000000, "");
 DEFINE_int32(record_mem, 0, "");
+DEFINE_int32(record_miss, 0, "");
 DEFINE_int32(record_threshold, 0, "");
 DEFINE_int32(record_rej, 0, "");
 DEFINE_bool(record_input, false, "");
-DEFINE_bool(fake_storage, false, "");
+DEFINE_int32(fake_storage, 0, "");
 
 using key_type = std::string;
 using value_type = std::string;
@@ -57,6 +58,9 @@ struct Row {
 std::vector<Row> rows;
 std::unordered_map<std::string /* offset */, std::string> storage;
 std::vector<size_t> mem_records;
+std::vector<double> lru_miss_rate_records;
+std::vector<double> clock_miss_rate_records;
+std::vector<double> sa_clock_miss_rate_records;
 std::vector<size_t> threshold_records;
 std::vector<size_t> rej_records;
 
@@ -65,9 +69,15 @@ long gen_fake_len(size_t real_len) {
   static long small_limit = 5000, large_floor = 50000;
   static long count = 0;
   ++count;
-  if (count % (FLAGS_storage_size / 10) == 0 ||
-      count % (FLAGS_storage_size / 10 + 100) == 0) {
-    small = !small;
+  if (FLAGS_fake_storage == 1) {
+    if (count % (FLAGS_storage_size / 4) == 0) {
+      small = !small;
+    }
+  } else {
+    if (count % (FLAGS_storage_size / 10) == 0 ||
+        count % (FLAGS_storage_size / 10 + 100) == 0) {
+      small = !small;
+    }
   }
 
   long fake_len = 0;
@@ -155,6 +165,10 @@ Metrics test_basic_lru(uint64_t iterations, uint64_t cache_size, double alpha) {
     if (FLAGS_record_mem > 0 && i % FLAGS_record_mem == 0) {
       mem_records.emplace_back(cur_mem_consum);
     }
+    if (FLAGS_record_miss > 0 && i % FLAGS_record_miss == 0 && i != 0) {
+      lru_miss_rate_records.emplace_back(static_cast<double>(cache.get_miss()) /
+                                         static_cast<double>(i));
+    }
   }
 
   return {cache.get_miss(), tc.get_elapsed(), mem_consume};
@@ -187,6 +201,9 @@ Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
       if (FLAGS_record_mem > 0 && i % FLAGS_record_mem == 0) {
         mem_records.emplace_back(cur_mem_consum);
       }
+      if (FLAGS_record_miss > 0 && i % FLAGS_record_miss == 0 && i != 0) {
+        clock_miss_rate_records.emplace_back(double(miss) / double(i));
+      }
     }
 
     return {miss, tc.get_elapsed(), mem_consume};
@@ -210,6 +227,9 @@ Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
       }
       if (FLAGS_record_rej > 0 && i % FLAGS_record_rej == 0) {
         rej_records.emplace_back(cache.get_rej_size());
+      }
+      if (FLAGS_record_miss > 0 && i % FLAGS_record_miss == 0 && i != 0) {
+        sa_clock_miss_rate_records.emplace_back(double(miss) / double(i));
       }
     }
     return {miss, tc.get_elapsed(), mem_consume, cache.get_rejects()};
@@ -263,6 +283,23 @@ int main(int argc, char *argv[]) {
         mem_records.clear();
       }
     }
+  }
+
+  if (FLAGS_record_miss > 0) {
+    std::ofstream outputFile("miss_records");
+    for (const double each : lru_miss_rate_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    for (const double each : clock_miss_rate_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    for (const double each : sa_clock_miss_rate_records) {
+      outputFile << each << " ";
+    }
+    outputFile << "\n";
+    outputFile.close();
   }
 
   // {
