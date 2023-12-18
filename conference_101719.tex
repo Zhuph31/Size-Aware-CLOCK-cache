@@ -121,6 +121,7 @@ In addition to assessing the Size-Aware CLOCK algorithm's performance, we delve 
 
 \subsubsection{Adaptability}
 Our study extends beyond a mere comparison of algorithms; we scrutinize the adaptability of the Size-Aware CLOCK policy under different scenarios and varying workload conditions. Specifically, we create a scenario where the input objects' sizes are changed drastically. This approach allows us to evaluate Size-Aware CLOCK's flexibility and responsiveness to changes in data access patterns and fluctuations in data size, which is one the most important targets that we designed the policies. By comparing Size-Aware CLOCK under this kind of scenario, we can easily tell the difference made by the size-aware layer and show that whether Size-Aware CLOCK has made its goals.
+1. add the experiment setup details here.
 
 
 \section{Evaluation Results}
@@ -180,6 +181,29 @@ The most important aspect that our Size Aware CLOCK address is the memory usage 
 From figure 3, we can see that the average memory usage of LRU and CLOCK are very close. This is reasonable because they will always adopt any object given to them since neither of them has any policies that will reject an object. The nuanced difference is caused by the difference between their eviction policy, where LRU will evict precisely the least recent used algorithm, while CLOCK may be not so precise due to the clock structure it used. Compared to these two baseline models, SA-CLOCK has a much smaller memory usage in average. It only consume less than 32 percent of the memory used by the other two baseline models. This result shows that our SA-CLOCK can indeed reduce the memory usage in recency based cache algorithm by a lot.  
 From figure 4, we can see the memory usage curve for each type of cache policy throughout the experiment process. Again, LRU and CLOCK have almost identical curves since they are very much alike in relation to memory usage. Our SA-CLOCK has kept a much smaller memory usage throughout the entire experiment. What is more, LRU and CLOCK both have a lot of peaks where the memory usage goes up drastically and then go back to average level. SA-CLOCK only has 2 peaks throughout the entire experiment. Memory usage peaks can be really harmful in production environments, where errors like OOM or decrease in performance due to memory recollection can happen and harm the application's overall stability. With much less memory peaks, our SA-CLOCK can help applications achieve better performance and stability in production environments.
 
+
+\subsection{Rejection Analysis}
+In this section, we analyze the rejects decisions made by our SA-CLOCK cache throughout the experiment. 
+
+\begin{figure}[h]
+\centerline{\includegraphics[width=0.5\textwidth]{pic/1000000-1000-rej}}
+\caption{Number of Rejects}
+\label{fig}
+\end{figure}
+
+
+\begin{figure}[h]
+\centerline{\includegraphics[width=0.5\textwidth]{pic/rej.png}}
+\caption{Rejected Objects Size}
+\label{fig}
+\end{figure}
+
+Figure 5 shows the number of rejections on admitting new objects into the cache made by each type of cache policy. LRU and CLOCK both has 0 rejects as they do not have a admission policy that would reject objects. Our SA-CLOCK made 149904 rejections in total, which is about 15 percent of the total objects. With these rejections, our SA-CLOCK successfully reduced the total memory usage while not decreasing the object hit ratio too much.
+Figure 6 shows the rejected objects' size throughout the experiment. From the figure, you can see that there are several peaks in the rejected objects' size, which can be matched to the memory usage peak of LRU and CLOCK in figure 4. This shows that our SA-CLOCK has successfully avoided several possible memory surges by using its threshold, and these valuable rejections has reduced the number of memory usage peaks that have taken place. 
+
+
+\subsection{Adaption to Change of Object Size}
+In this section, we con
 
 
 
