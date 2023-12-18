@@ -19,6 +19,7 @@ DEFINE_int32(record_mem, 0, "");
 DEFINE_int32(record_threshold, 0, "");
 DEFINE_int32(record_rej, 0, "");
 DEFINE_bool(record_input, false, "");
+DEFINE_bool(fake_storage, false, "");
 
 using key_type = std::string;
 using value_type = std::string;
@@ -58,6 +59,28 @@ std::vector<size_t> mem_records;
 std::vector<size_t> threshold_records;
 std::vector<size_t> rej_records;
 
+long gen_fake_len() {
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+  static std::uniform_int_distribution<long> small_dis(1024, 4800),
+      big_dis(60000, 70000);
+  static long count = 0;
+  static bool small = true;
+  ++count;
+  if (count % 250000 == 0) {
+    small = !small;
+  }
+
+  long fake_len = 0;
+  if (small) {
+    fake_len = small_dis(gen);
+  } else {
+    fake_len = big_dis(gen);
+  }
+  // printf("gen fake len:%ld\n", fake_len);
+  return fake_len;
+}
+
 void init_storage() {
   std::ifstream file(FLAGS_file);
   if (!file.is_open()) {
@@ -66,9 +89,9 @@ void init_storage() {
   std::string line;
 
   long begin_ts = -1;
+  int count = 0;
 
-  while (std::getline(file, line)) {
-
+  while (std::getline(file, line) && ++count < 100000) {
     std::istringstream iss(line);
     std::string value;
     std::vector<std::string> values;
@@ -85,9 +108,10 @@ void init_storage() {
     } else {
       begin_ts = std::stol(ts);
     }
-    rows.emplace_back(Row(relative_ts,
-                          type == "Read" ? VisitType::READ : VisitType::WRITE,
-                          offset, std::stol(length)));
+    rows.emplace_back(
+        Row(relative_ts, type == "Read" ? VisitType::READ : VisitType::WRITE,
+            offset, FLAGS_fake_storage ? gen_fake_len() : std::stol(length)));
+    // printf("row len:%ld\n", rows.back().cache_key.length);
   }
 
   for (const Row &row : rows) {
@@ -207,7 +231,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::vector<uint64_t> iteration_options = {1000000};
+  std::vector<uint64_t> iteration_options = {100000};
   std::vector<uint64_t> cache_size_options = {1000};
   std::vector<double> alpha_options = {0.1};
   std::vector<size_t> lru_mem_records, clock_mem_records, sa_clock_mem_records;
