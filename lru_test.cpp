@@ -66,7 +66,7 @@ std::vector<size_t> rej_records;
 
 long gen_fake_len(size_t real_len) {
   static bool small = true;
-  static long small_limit = 5000, large_floor = 50000;
+  static long small_limit = 10000, large_floor = 50000;
   static long count = 0;
   ++count;
   if (FLAGS_fake_storage == 1) {
