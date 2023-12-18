@@ -60,26 +60,23 @@ std::vector<size_t> mem_records;
 std::vector<size_t> threshold_records;
 std::vector<size_t> rej_records;
 
-long gen_fake_len() {
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
-  static std::uniform_int_distribution<long> small_dis(1024, 4800),
-      big_dis(60000, 70000);
-  static long count = 0;
+long gen_fake_len(size_t real_len) {
   static bool small = true;
+  static long small_limit = 5000, large_floor = 50000;
+  static long count = 0;
   ++count;
-  if (count % (FLAGS_storage_size / 4) == 0 ||
-      count % (FLAGS_storage_size / 4 + FLAGS_storage_size / 20) == 0) {
+  if (count % (FLAGS_storage_size / 10) == 0 ||
+      count % (FLAGS_storage_size / 10 + 100) == 0) {
     small = !small;
   }
 
   long fake_len = 0;
   if (small) {
-    fake_len = small_dis(gen);
+    fake_len = real_len % small_limit;
   } else {
-    fake_len = big_dis(gen);
+    fake_len = real_len % 10000 + large_floor;
   }
-  // printf("gen fake len:%ld\n", fake_len);
+  // printf("gen fake len:%ld vs %ld\n", real_len, fake_len);
   return fake_len;
 }
 
@@ -110,9 +107,11 @@ void init_storage() {
     } else {
       begin_ts = std::stol(ts);
     }
-    rows.emplace_back(
-        Row(relative_ts, type == "Read" ? VisitType::READ : VisitType::WRITE,
-            offset, FLAGS_fake_storage ? gen_fake_len() : std::stol(length)));
+    rows.emplace_back(Row(relative_ts,
+                          type == "Read" ? VisitType::READ : VisitType::WRITE,
+                          offset,
+                          FLAGS_fake_storage ? gen_fake_len(std::stol(length))
+                                             : std::stol(length)));
     // printf("row len:%ld\n", rows.back().cache_key.length);
   }
 
@@ -201,6 +200,7 @@ Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
       auto &val = cache.get(row.cache_key.key);
       // printf("key:%lu, val:%lu\n", row.cache_key.key.size(), val.size());
       size_t cur_mem_consum = cache.get_mem_consume();
+      // printf("get cur mem :%ld", cur_mem_consum);
       mem_consume = (mem_consume * i + cur_mem_consum) / (i + 1);
       if (FLAGS_record_mem > 0 && i % FLAGS_record_mem == 0) {
         mem_records.emplace_back(cur_mem_consum);
