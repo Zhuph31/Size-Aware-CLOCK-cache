@@ -14,16 +14,16 @@
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
-\title{LRU*\\
+\title{Achieving Low Memory Usage With Size-Aware Recency Based Cache*\\
 {\footnotesize \textsuperscript{*}}
 \thanks{}
 }
 
 \author{\IEEEauthorblockN{1\textsuperscript{st} Penghui Zhu}
-	\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-		\textit{name of organization (of Aff.)}\\
-		City, Country \\
-		email address or ORCID}
+	\IEEEauthorblockA{\textit{Department of Electric and Computer Enginerring} \\
+		\textit{University of Toronto}\\
+		Toronto, Canada \\
+		penghui.zhu@mail.utoronto.ca}
 }
 
 \maketitle
@@ -255,7 +255,14 @@ In conclusion, the choice of $\alpha$ definitely has a great influence on the pe
 
 
 \section{Future Improvements}
+From our experiments, we can see that our Size-Aware CLOCK has the ability to reduce cache memory usage, which is exactly our target. Nevertheless, there are still aspects that it can be further refined. 
 
+The most significant aspect that needs refinement is the dynamic mechanism for our admission threshold. The threshold is the core of the admission policy and its current update mechanism is still immature. The adaption of the threshold rely heavily on the parameter $\alpha$, which needs to be chosen by the users. A suitable choice of $\alpha$ depends on users' previous knowledge about the dataset, which in turn makes users' burden heavier and it is unlikely that users can always make the perfect decision. Therefore, improvements could be made on the adjusting process of the threshold, especially ones that can make the threshold more self-adaptive and requires less human efforts.
+
+\section{Conclusion}
+In conclusion, our Size-Aware CLOCK, built upon the CLOCK algorithm with the addition of size-based rejection and dynamic threshold adjustment using an exponential smoothing algorithm, has demonstrated significant effectiveness in reducing memory consumption. The rejection of objects exceeding a dynamically adjusted threshold helps control the cache size, contributing to a more efficient memory usage. Moreover, it also notably improved the time efficiency on the base of CLOCK policy. On the downside, our experiments revealed a trade-off, as the cache hit rate experienced a slight degradation.
+
+As for the ease-of-use of our Size-Aware CLOCK, the delicate balance required in adjusting the parameter of the exponential smoothing algorithm poses pressure on the users. Fine-tuning these parameters is crucial to optimizing the cache policy's performance and achieving a better trade-off between memory usage and cache hit rate. An improvement that makes the parameters self-adaptive could be a future path for enhancing the current policy.
 
 \section*{References}
 
