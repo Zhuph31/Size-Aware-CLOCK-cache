@@ -3,6 +3,8 @@
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{subcaption}
 \usepackage[export]{adjustbox} 
 \usepackage{algorithmic}
 \usepackage{graphicx}
@@ -97,9 +99,14 @@ Utilizing the exponential smoothing technique affords us the capability to assig
 
 By embracing this adaptive approach, our Size-Aware CLOCK not only accommodates fluctuations in the sizes of input objects but also avoids extreme responses, such as outright rejection of all objects upon size increase or indiscriminate admission of all objects following a size reduction. This adaptability ensures a more nuanced and responsive caching system, capable of optimizing performance across a spectrum of input scenarios. 
 
-1. Exponential smoothing formula
-2. compare different exponential smoothing parameters
-3. prove that exponential smoothing is indispensable 
+The exponential smoothing formula is as follow.
+\[
+\text{threshold}_{\text{new}} = a \cdot \text{input} + (1 - a) \cdot \text{threshold}_{\text{old}}
+\]
+
+Every time we performed an operation on the cache, the cache will update the threshold using the corresponding value's size. With this formula, the threshold will keep adapting to reflect a useful threshold that can provide a good distinctiveness.
+Within the formula, the variable a is a parameter that needs to be given by the user of the Size-Aware CLOCK. We will delve into the find-tunning of this parameter in later sections.
+
 
 
 \section{Evaluation Methodology}
@@ -119,9 +126,9 @@ In the evaluation process, we employed real-world trace-based data. The real wor
 \subsubsection{Parameter Tunning}
 In addition to assessing the Size-Aware CLOCK algorithm's performance, we delve into the specifics of its implementation. This includes a detailed exploration of any adjustable parameters or thresholds and an analysis of how these configurations impact the overall effectiveness of the cache policy.
 
-\subsubsection{Adaptability}
-Our study extends beyond a mere comparison of algorithms; we scrutinize the adaptability of the Size-Aware CLOCK policy under different scenarios and varying workload conditions. Specifically, we create a scenario where the input objects' sizes are changed drastically. This approach allows us to evaluate Size-Aware CLOCK's flexibility and responsiveness to changes in data access patterns and fluctuations in data size, which is one the most important targets that we designed the policies. By comparing Size-Aware CLOCK under this kind of scenario, we can easily tell the difference made by the size-aware layer and show that whether Size-Aware CLOCK has made its goals.
-1. add the experiment setup details here.
+% \subsubsection{Adaptability}
+% Our study extends beyond a mere comparison of algorithms; we scrutinize the adaptability of the Size-Aware CLOCK policy under different scenarios and varying workload conditions. Specifically, we create a scenario where the input objects' sizes are changed drastically. This approach allows us to evaluate Size-Aware CLOCK's flexibility and responsiveness to changes in data access patterns and fluctuations in data size, which is one the most important targets that we designed the policies. By comparing Size-Aware CLOCK under this kind of scenario, we can easily tell the difference made by the size-aware layer and show that whether Size-Aware CLOCK has made its goals.
+% 1. add the experiment setup details here.
 
 
 \section{Evaluation Results}
@@ -202,11 +209,52 @@ Figure 5 shows the number of rejections on admitting new objects into the cache 
 Figure 6 shows the rejected objects' size throughout the experiment. From the figure, you can see that there are several peaks in the rejected objects' size, which can be matched to the memory usage peak of LRU and CLOCK in figure 4. This shows that our SA-CLOCK has successfully avoided several possible memory surges by using its threshold, and these valuable rejections has reduced the number of memory usage peaks that have taken place. 
 
 
-\subsection{Adaption to Change of Object Size}
-In this section, we con
+% \subsection{Adaption to Change of Object Size}
+% In this section, we con
+\subsection{Parameter Tunning}
+In this section, we do some experiments on tunning the parameter in our Size-Aware CLOCK, which is the only parameter that requires user to specify. Here we refer the parameter as $\alpha$. We tried 19 different value from 0.05 to 0.95 and recorded their performance metrics.
+
+\begin{figure}
+  \centering
+  \begin{subfigure}[h]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{pic/alpha/miss.png}
+    \caption{Miss Ratio}
+    \label{fig:sub1}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[h]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{pic/alpha/mem.png}
+    \caption{Memory Usage}
+    \label{fig:sub2}
+  \end{subfigure}
+  
+  \medskip
+  
+  \begin{subfigure}[h]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{pic/alpha/tc.png}
+    \caption{Time Cost}
+    \label{fig:sub3}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[h]{0.4\textwidth}
+    \includegraphics[width=\textwidth]{pic/alpha/rej.png}
+    \caption{Rejections}
+    \label{fig:sub4}
+  \end{subfigure}
+  
+  \caption{Evaluation of Different Parameter}
+  \label{fig:main} 
+\end{figure}
+
+Figure 7 shows the miss ratio, memory usage, time cost, and number of rejections of each value of $\alpha$.
+From the miss ratio figure, we can see that the miss ratio varies very little for different choice of $\alpha$ in our experiment. Generally, 0.1 is the best one but the margins are very small and do not show any trend as $\alpha$ grows bigger.
+From the memory usage figure, we can tell that as $\alpha$ grows bigger, the memory usage generally grows. This is reasonable because when $\alpha$ is bigger, our Size-Aware CLOCK reacts faster to the surge of the size of input objects. Therefore, when the input objects get bigger, a bigger $\alpha$ will enlarge the threshold quicker allow more large objects to enter the cache, resulting in a larger memory usage.
+From the time cost figure, we can tell that as $\alpha$ changes, the time cost does not change very much. This is consistent with the result of miss ratio, as the time are mostly spent on replacing cached objects and only a cache miss would cause such operation.
+From the rejection figure, we can see that as $\alpha$ grows, our Size-Aware CLOCK makes more rejections. This shows that although a bigger $\alpha$ reacts more quickly when the input objects' size increases, it also shrinks the threshold quicker when the objects' size decreases. This causes the threshold to be unstable and makes more rejections on our dataset.
+In conclusion, the choice of $\alpha$ definitely has a great influence on the performance of our Size-Aware CLOCK. However, different $\alpha$ should be adopted for different datasets in order to reach maximum performance.
 
 
-
+\section{Future Improvements}
 
 
 \section*{References}
