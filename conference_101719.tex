@@ -48,25 +48,38 @@ The rest of the paper is organized as follows. Section 2 presents the background
 \section{Background and Motivation}
 
 \subsection{Least Recently Used}
-The Least Recently Used (LRU) cache replacement policy is a foundational concept in computer science, vital for optimizing cache system performance. Caches, high-speed memory storage units, store frequently accessed data to expedite retrieval from slower, main memory. LRU efficiently manages cache contents by prioritizing the retention of recently accessed data.
+The Least Recently Used (LRU) \cite{b1} cache replacement policy is a foundational concept in computer science, vital for optimizing cache system performance. LRU efficiently manages cache contents by prioritizing the retention of recently accessed data.
+
 LRU operates on the principle of discarding the least recently used items in the cache when space is needed for new data. This strategy is grounded in the concept of temporal locality, assuming that recently accessed items are more likely to be accessed again soon. LRU employs heuristics based on historical usage patterns to make informed decisions about cache management.
 Common LRU implementations involve maintaining a linked list or a similar data structure to track the order in which items were accessed. When an item is accessed, it is moved to the front of the list, signifying recent use. Eviction occurs by removing the item at the list's end when the cache reaches capacity. Alternatively, counters or timestamps associated with each item can be used to identify the least recently used item when eviction is necessary.
+
 In implementing the LRU cache policy, a hash map is commonly used to efficiently reference objects in the linked list. This hash map acts as a lookup table, associating each item with its position in the list. However, this approach introduces potential memory overhead as the hash map itself requires extra memory for mapping information. In scenarios with numerous cached items, managing this additional memory becomes crucial to strike a balance between performance gains and resource utilization.
-Moreover, LRU also has no adoption or eviction policies related to the objects' size. This means that LRU can adopt very large objects into cache, resulting in the surge of the memory consumption. Given a limited amount of memory space, LRU would hurt other applications for taking up too much memory.
+
+Moreover, LRU also has no adoption or eviction policies related to the objects' size. This means that LRU can adopt very large objects into cache, resulting in the surge of the memory consumption. Given a limited amount of memory space, LRU would hurt other processes for taking up too much memory.
 
 \subsection{CLOCK}
-CLOCK is another widely adopted cache replacement policy. CLOCK simplifies memory management by assigning a single-byte flag to each cached object, eliminating the need for complex hashmap structures. The algorithm builds upon LRU principles but distinguishes itself through a circular buffer mechanism, enhancing efficiency without compromising performance.
+CLOCK \cite{b1} is another widely adopted cache replacement policy. CLOCK simplifies memory management by assigning a single-byte flag to each cached object, eliminating the need for complex hashmap structures. The algorithm builds upon LRU principles but distinguishes itself through a circular buffer mechanism, enhancing efficiency without compromising performance.
+
 CLOCK's core principle involves a circular buffer and a clock hand that moves sequentially through cached objects. When an object is accessed, its flag is set, and the clock hand advances. If the hand encounters a flagged object, it resets the flag. This modification, combined with a straightforward replacement strategy based on the clock hand's position, preserves the essence of recency based eviction without the need for extensive tracking.
+
 CLOCK achieves remarkable efficiency by utilizing only a single byte per cached object for the flag, in stark contrast to LRU's reliance on hashmaps. The circular buffer's minimal extra memory requirement ensures a lightweight footprint. However, CLOCK ignores object characteristics and sizes in its decision-making process. Therefore, CLOCK still suffers from the possibility of taking up too much memory space despite its relatively simpleness compared to LRU.
 
+\subsection{Most Recently Used}: In contrast to LRU, the Most Recently Used (MRU) cache replacement algorithm removes the cache entry most recently accessed. While MRU shares the simplicity of LRU, it operates on the premise that the most recently accessed items are likely to be accessed again soon. However, MRU may fall short in capturing nuanced access patterns and adapting to certain irregularities in the workload.
+
+\subsection{Adaptive Replacement Cache}: The Adaptive Replacement Cache (ARC) algorithm dynamically adjusts cache size based on both recency and frequency considerations. It maintains two lists, one for recently used items (LRU) and one for frequently used items (LFU), adapting the size of these lists based on the workload. ARC represents a nuanced compromise between LRU and LFU, addressing some of their limitations. While it offers adaptability to changing workloads, the implementation complexity of ARC should be carefully weighed against its potential benefits in specific system environments.
+
+\subsection{Motivation}
+Expanding on the previous discussion about recency-based cache replacement, our motivation for this research comes from noticing that existing methods don't consider the size of stored objects. In today's diverse computer applications, where data sizes can vary a lot, not factoring in object size can lead to inefficient use of cache space and slow system performance. Therefore, our idea is to include object size in cache management strategies to make them more adaptable and effective. This study aims to fill this gap in current approaches, offering insights into managing caches with different-sized objects.
+
+
 \section{Related Works}
-In this section, we briefly review recent work related to our design and highlight differences with our approach.
+In this section, we briefly review other works related to our design and highlight their differences with our approach.
 
 \subsection{TBF}
-TBF is new RAM-frugal cache replacement policy that approximates the least-recently-used (LRU) policy. It uses two in-memory Bloom sub-filters (TBF) for maintaining the recency information and leverages an on-flash key–value store to cache objects. TBF requires only one byte of RAM per cached object, making it suitable for implementing very large flash-based caches. The two bloom filters here is used to realize the delete operation as one is discarded periodically. TBF is evaluated through simulation on traces from several block stores and key–value stores, as well as using the Yahoo! Cloud Serving Benchmark in a real system implementation. The results show that TBF achieves cache hit rate and operations per second comparable to those of LRU in spite of its much smaller memory requirements.
+TBF \cite{b2} is new RAM-frugal cache replacement policy that approximates the least-recently-used (LRU) policy. It uses two in-memory Bloom sub-filters (TBF) for maintaining the recency information and leverages an on-flash key–value store to cache objects. TBF requires only one byte of RAM per cached object, making it suitable for implementing very large flash-based caches. The two bloom filters here is used to realize the delete operation as one is discarded periodically. TBF is evaluated through simulation on traces from several block stores and key–value stores, as well as using the Yahoo! Cloud Serving Benchmark in a real system implementation. The results show that TBF achieves cache hit rate and operations per second comparable to those of LRU in spite of its much smaller memory requirements.
 
 \subsection{Me-CLOCK}
-Me-CLOCK stands for Memory-Efficient CLOCK and it targets to reduce the memory= overhead introduced by the replacement policy of SSD-based cache. It proposes a memory-efficient framework which keeps most data structures in SSD while just leaving the memory efficient data structure in main memory.
+Me-CLOCK \cite{b3} stands for Memory-Efficient CLOCK and it targets to reduce the memory= overhead introduced by the replacement policy of SSD-based cache. It proposes a memory-efficient framework which keeps most data structures in SSD while just leaving the memory efficient data structure in main memory.
 The memory efficient data structure here refers to a new kind of bloom filter introduced by this paper. Unlike a traditional bloom filter, the new bloom filter supports element deletion and it takes over the responsibility of keeping the reused flag, indicating whether a page has been frequently accessed. The framework can be used to implement any LRU-based replacement policies under negligible memory overhead. The evaluation shows that its memory overhead is 10 times less that that introduced by traditional manners such as LRU or CLOCK.
 Me-CLOCK is similar to TBF, but it is better in the way that it can be applied to algorithms other than LRU. It also has less memory overhead because it only uses 1 bloom filter instead of 2.
 
@@ -287,9 +300,9 @@ For papers published in translation journals, please give the English
 citation first, followed by the original foreign-language citation \cite{b6}.
 
 \begin{thebibliography}{00}
-	\bibitem{b1} G. Eason, B. Noble, and I. N. Sneddon, ``On certain integrals of Lipschitz-Hankel type involving products of Bessel functions,'' Phil. Trans. Roy. Soc. London, vol. A247, pp. 529--551, April 1955.
-	\bibitem{b2} J. Clerk Maxwell, A Treatise on Electricity and Magnetism, 3rd ed., vol. 2. Oxford: Clarendon, 1892, pp.68--73.
-	\bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
+	\bibitem{b1} https://en.wikipedia.org/wiki/Cache\_replacement\_policies [2023] Online.
+	\bibitem{b2} C. Ungureanu, B. Debnath, S. Rago, A. Aranya, "TBF: A Memory-Efficient Replacement Policy for Flash-based Caches" ,2013 IEEE 29th International Conference on Data Engineering (ICDE). 
+	\bibitem{b3} Z. Chen, N. Xiao, Member, IEEE, Y. Lu, F. Liu, Y. Ou, Me-CLOCK:A Memory-Efficient Framework to Implement Replacement Policies for Large Caches, IEEE Transactions on Computers ( Volume: 65, Issue: 8, 01 August 2016)
 	\bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
 	\bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
 	\bibitem{b6} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ``Electron spectroscopy studies on magneto-optical media and plastic substrate interface,'' IEEE Transl. J. Magn. Japan, vol. 2, pp. 740--741, August 1987 [Digests 9th Annual Conf. Magnetics Japan, p. 301, 1982].
