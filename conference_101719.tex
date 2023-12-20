@@ -86,8 +86,9 @@ Me-CLOCK is similar to TBF, but it is better in the way that it can be applied t
 Both TBF and Me-CLOCK are designed for flash-based cache and have indeed reduced the memory overhead, but they do not pay any attention to the objects themselves. Therefore, they could lead to a bigger memory consumption under the same Object Hit Ratio.
 
 \subsection{AdaptSize}
-This paper proposed a new cache admission policy called AdaptSize. It is the first caching system to uses a size-aware admission policy that is continuously adapted to the request traffic. There are two variants proposed. AdaptSize(Chance) probabilistically decides whether or not to admit an object into the cache with the admission probability equal to $e^{-\frac{\text{size}}{c}}$, where c is a tunable parameter. AdaptSize(Threshold) admits an object if its size is below a tunable parameter c. The threshold and its parameters are constantly updated as the requests come in. AdaptSize is evaluated on production request traces and the results show that AdaptSize indeed improves the Object Hit Ratio.
-AdaptSize is differ from other policies due to its attention to object size. It chooses to use the more complicated AdaptSize(Chance) while the results shows that there is actually very little different between it and AdaptSize(Threshold). The author evaluated AdaptSize by combining it with the Varnish Cache, but did not tried to combine it with the LRU policy.
+This paper proposed a new cache admission policy called AdaptSize \cite{b4}. It is the first caching system to uses a size-aware admission policy that is continuously adapted to the request traffic. There are two variants proposed. AdaptSize(Chance) probabilistically decides whether or not to admit an object into the cache with the admission probability equal to $e^{-\frac{\text{size}}{c}}$, where c is a tunable parameter. AdaptSize(Threshold) admits an object if its size is below a tunable parameter c. The threshold and its parameters are constantly updated as the requests come in. AdaptSize is evaluated on production request traces and the results show that AdaptSize indeed improves the Object Hit Ratio.
+
+AdaptSize is differ from other policies due to its attention to object size. It chooses to use the more complicated AdaptSize(Chance) while the results shows that there is actually very little different between it and AdaptSize(Threshold). The author evaluated AdaptSize by combining it with the Varnish Cache, but did not tried to combine it with a recency based policy.
 
 \section{Size-Aware CLOCK}
 \subsection{Overview}
@@ -115,12 +116,11 @@ By embracing this adaptive approach, our Size-Aware CLOCK not only accommodates 
 
 The exponential smoothing formula is as follow.
 \[
-\text{threshold}_{\text{new}} = a \cdot \text{input} + (1 - a) \cdot \text{threshold}_{\text{old}}
+\text{threshold}_{\text{new}} = \alpha \cdot \text{input} + (1 - \alpha) \cdot \text{threshold}_{\text{old}}
 \]
 
 Every time we performed an operation on the cache, the cache will update the threshold using the corresponding value's size. With this formula, the threshold will keep adapting to reflect a useful threshold that can provide a good distinctiveness.
-Within the formula, the variable a is a parameter that needs to be given by the user of the Size-Aware CLOCK. We will delve into the find-tunning of this parameter in later sections.
-
+Within the formula, the variable $\alpha$ is a parameter that needs to be given by the user of the Size-Aware CLOCK. We will delve into the find-tunning of this parameter in later sections.
 
 
 \section{Evaluation Methodology}
@@ -130,7 +130,7 @@ In this section, we will discuss the evaluation methodology, dataset used, and c
 \subsubsection{Compared Methods}
 To maintain parity in our evaluation, we rigorously implemented alternative cache policies for comparison. This strategic approach ensures that any observed differences in performance can be confidently attributed to the unique characteristics of the Size-Aware CLOCK policy, rather than variations in the evaluation methodologies.
 
-Here we have chosen to implement LRU and CLOCK as opponents of our Size-Aware CLOCK. LRU is chosen because of it is the most famous and widely adopted recency based cache policy. CLOCK is chosen for the same reason, but also for it is the base of our Size-Aware CLOCK, which can serve as a excellent contrast to show the difference made by adding a size-aware layer when adopting objects into cache. Our evaluation criteria encompass a range of metrics commonly used to gauge cache performance, including hit rate, miss rate, and overall cache efficiency. By employing a multifaceted evaluation framework, we aim to provide a comprehensive view of how the Size-Aware CLOCK policy performs under various conditions and workloads.
+Here we have chosen to implement LRU and CLOCK as opponents of our Size-Aware CLOCK. LRU is chosen because of it is the most famous and widely adopted recency based cache policy. CLOCK is chosen for the same reason, but also for it is the base of our Size-Aware CLOCK, which can serve as an excellent contrast to show the difference made by adding a size-aware layer when adopting objects into cache. Our evaluation criteria encompass a range of metrics commonly used to gauge cache performance, including miss rate and overall cache efficiency. By employing a multifaceted evaluation framework, we aim to provide a comprehensive view of how the Size-Aware CLOCK policy performs under various conditions and workloads.
 
 \subsubsection{Real Wold Traces Based Evaluation}
 We conducted a comprehensive evaluation of the Size-Aware CLOCK cache policy using real-world trace-based data. The implementation of Size-Aware CLOCK is robust and complete, and we took deliberate measures to ensure a fair and equitable evaluation by comparing its performance with other implemented cache policies.
@@ -154,9 +154,12 @@ In this section, we focus on the performance of our Size-Aware CLOCK, including 
 \subsubsection{Experiments Setup}
 As mentioned in previous sections, we use real world traces posted by Microsoft Research Team as the input. For each item in the trace, a string with the specified length will be generated into a in-memory data structure, which serves as a global storage. In the meantime, the file name and the offset in the file combined are used as the key, which is later used for searching this object in the cache and the storage. 
 When the experiments start, we start to range over the items in the traces and for each item, a get request is generated to try to get the result from the cache. If the get request succeeds, we will move onto the next item. Otherwise, we will get the real object from the global storage and generate an add request to try to add the object into the cache. For LRU and CLOCK, this object should be added into the cache, while SA-CLOCK will make judgement base on the size of the object.
+
 For each experiment, we tried different combination of storage size and cache size. However, the results do not vary too much, therefore we only present some of the results as they can well represent the evaluation outcomes. Here we choose a storage size of 1,000,000 and a cache size of 1,000.
 
-\subsubsection{Cache Miss Count}
+For the parameter $\alpha$ in our exponential smoothing formula, we use 0.1. This parameter is tested to be the best on the current dataset and we will discuss its choice in later sections.
+
+\subsubsection{Cache Miss Ratio}
 For a cache policy, the most important aspect is its ability to cache objects, which can be reflected by Object Hit Ratio. Here we record the number of cache miss during the experiment and calculate the Miss Ratio. Figure 1 shows the results for LRU, CLOCK and our SA-CLOCK. 
 
 \begin{figure}[h]
@@ -166,10 +169,7 @@ For a cache policy, the most important aspect is its ability to cache objects, w
     % \label{fig:sample}
 \end{figure}
 
-From the figure you can see that our SA-CLOCK is slightly worse than LRU and CLOCK, with about 2.4 percent. This shows that our SA-CLOCK is worse than the other two baseline policies respect to object hit.
-1. conduct more experiment to answer this question
-2. say that the decline is very small and could possibly be ignored
-
+From the figure you can see that our SA-CLOCK is slightly worse than LRU and CLOCK, with about 2.4 percent. This shows that our SA-CLOCK is worse than the other two baseline policies respect to object hit. However, the difference is not very big, and could be treated as a reasonable trade-off. 
 
 \subsubsection{Time Cost}
 We also pay attention to the time cost of the whole experiment process, which is the time used to send the 1,000,000 get requests and possible add requests. One thing worth noticing is that with this evaluation strategy, there will be more add requests if there are more misses, which means that our SA-CLOCK actually has an inherent disadvantage in the test of time cost. Figure 2 shows the time used by each policy in milliseconds.
@@ -199,8 +199,10 @@ The most important aspect that our Size Aware CLOCK address is the memory usage 
 \label{fig}
 \end{figure}
 
-From figure 3, we can see that the average memory usage of LRU and CLOCK are very close. This is reasonable because they will always adopt any object given to them since neither of them has any policies that will reject an object. The nuanced difference is caused by the difference between their eviction policy, where LRU will evict precisely the least recent used algorithm, while CLOCK may be not so precise due to the clock structure it used. Compared to these two baseline models, SA-CLOCK has a much smaller memory usage in average. It only consume less than 32 percent of the memory used by the other two baseline models. This result shows that our SA-CLOCK can indeed reduce the memory usage in recency based cache algorithm by a lot.  
+From figure 3, we can see that the average memory usage of LRU and CLOCK are very close. This is reasonable because they will always adopt any object given to them since neither of them has any policies that will reject an object. The nuanced difference is caused by the difference between their eviction policy, where LRU will evict precisely the least recently used algorithm, while CLOCK may be not so precise due to the clock structure it used. Compared to these two baseline models, SA-CLOCK has a much smaller memory usage in average. It only consume less than 32 percent of the memory used by the other two baseline models. This result shows that our SA-CLOCK can indeed reduce the memory usage in recency based cache algorithm by a lot.  
+
 From figure 4, we can see the memory usage curve for each type of cache policy throughout the experiment process. Again, LRU and CLOCK have almost identical curves since they are very much alike in relation to memory usage. Our SA-CLOCK has kept a much smaller memory usage throughout the entire experiment. What is more, LRU and CLOCK both have a lot of peaks where the memory usage goes up drastically and then go back to average level. SA-CLOCK only has 2 peaks throughout the entire experiment. Memory usage peaks can be really harmful in production environments, where errors like OOM or decrease in performance due to memory recollection can happen and harm the application's overall stability. With much less memory peaks, our SA-CLOCK can help applications achieve better performance and stability in production environments.
+
 
 
 \subsection{Rejection Analysis}
@@ -215,11 +217,12 @@ In this section, we analyze the rejects decisions made by our SA-CLOCK cache thr
 
 \begin{figure}[h]
 \centerline{\includegraphics[width=0.5\textwidth]{pic/rej.png}}
-\caption{Rejected Objects Size}
+\caption{Rejected Objects' Size}
 \label{fig}
 \end{figure}
 
 Figure 5 shows the number of rejections on admitting new objects into the cache made by each type of cache policy. LRU and CLOCK both has 0 rejects as they do not have a admission policy that would reject objects. Our SA-CLOCK made 149904 rejections in total, which is about 15 percent of the total objects. With these rejections, our SA-CLOCK successfully reduced the total memory usage while not decreasing the object hit ratio too much.
+
 Figure 6 shows the rejected objects' size throughout the experiment. From the figure, you can see that there are several peaks in the rejected objects' size, which can be matched to the memory usage peak of LRU and CLOCK in figure 4. This shows that our SA-CLOCK has successfully avoided several possible memory surges by using its threshold, and these valuable rejections has reduced the number of memory usage peaks that have taken place. 
 
 
@@ -261,10 +264,15 @@ In this section, we do some experiments on tunning the parameter in our Size-Awa
 \end{figure}
 
 Figure 7 shows the miss ratio, memory usage, time cost, and number of rejections of each value of $\alpha$.
+
 From the miss ratio figure, we can see that the miss ratio varies very little for different choice of $\alpha$ in our experiment. Generally, 0.1 is the best one but the margins are very small and do not show any trend as $\alpha$ grows bigger.
+
 From the memory usage figure, we can tell that as $\alpha$ grows bigger, the memory usage generally grows. This is reasonable because when $\alpha$ is bigger, our Size-Aware CLOCK reacts faster to the surge of the size of input objects. Therefore, when the input objects get bigger, a bigger $\alpha$ will enlarge the threshold quicker allow more large objects to enter the cache, resulting in a larger memory usage.
+
 From the time cost figure, we can tell that as $\alpha$ changes, the time cost does not change very much. This is consistent with the result of miss ratio, as the time are mostly spent on replacing cached objects and only a cache miss would cause such operation.
+
 From the rejection figure, we can see that as $\alpha$ grows, our Size-Aware CLOCK makes more rejections. This shows that although a bigger $\alpha$ reacts more quickly when the input objects' size increases, it also shrinks the threshold quicker when the objects' size decreases. This causes the threshold to be unstable and makes more rejections on our dataset.
+
 In conclusion, the choice of $\alpha$ definitely has a great influence on the performance of our Size-Aware CLOCK. However, different $\alpha$ should be adopted for different datasets in order to reach maximum performance.
 
 
@@ -273,43 +281,19 @@ From our experiments, we can see that our Size-Aware CLOCK has the ability to re
 
 The most significant aspect that needs refinement is the dynamic mechanism for our admission threshold. The threshold is the core of the admission policy and its current update mechanism is still immature. The adaption of the threshold rely heavily on the parameter $\alpha$, which needs to be chosen by the users. A suitable choice of $\alpha$ depends on users' previous knowledge about the dataset, which in turn makes users' burden heavier and it is unlikely that users can always make the perfect decision. Therefore, improvements could be made on the adjusting process of the threshold, especially ones that can make the threshold more self-adaptive and requires less human efforts.
 
+Another thing worth mentioning is that the cache miss ratio of our Size-Aware CLOCK is slightly higher than the baseline strategies. According the results published in AdaptSize \cite{b4}, a size-aware admission policy can actually improve cache hit ratio. However, the experiment setting of AdaptSize and our Size-Aware CLOCK is very different, and the dataset is not the same. Further research may be conducted to see if the cache hit ratio of our Size-Aware CLOCK can be improved.
+
 \section{Conclusion}
 In conclusion, our Size-Aware CLOCK, built upon the CLOCK algorithm with the addition of size-based rejection and dynamic threshold adjustment using an exponential smoothing algorithm, has demonstrated significant effectiveness in reducing memory consumption. The rejection of objects exceeding a dynamically adjusted threshold helps control the cache size, contributing to a more efficient memory usage. Moreover, it also notably improved the time efficiency on the base of CLOCK policy. On the downside, our experiments revealed a trade-off, as the cache hit rate experienced a slight degradation.
 
 As for the ease-of-use of our Size-Aware CLOCK, the delicate balance required in adjusting the parameter of the exponential smoothing algorithm poses pressure on the users. Fine-tuning these parameters is crucial to optimizing the cache policy's performance and achieving a better trade-off between memory usage and cache hit rate. An improvement that makes the parameters self-adaptive could be a future path for enhancing the current policy.
 
-\section*{References}
-
-Please number citations consecutively within brackets \cite{b1}. The
-sentence punctuation follows the bracket \cite{b2}. Refer simply to the reference
-number, as in \cite{b3}---do not use ``Ref. \cite{b3}'' or ``reference \cite{b3}'' except at
-the beginning of a sentence: ``Reference \cite{b3} was the first $\ldots$''
-
-Number footnotes separately in superscripts. Place the actual footnote at
-the bottom of the column in which it was cited. Do not put footnotes in the
-abstract or reference list. Use letters for table footnotes.
-
-Unless there are six authors or more give all authors' names; do not use
-``et al.''. Papers that have not been published, even if they have been
-submitted for publication, should be cited as ``unpublished'' \cite{b4}. Papers
-that have been accepted for publication should be cited as ``in press'' \cite{b5}.
-Capitalize only the first word in a paper title, except for proper nouns and
-element symbols.
-
-For papers published in translation journals, please give the English
-citation first, followed by the original foreign-language citation \cite{b6}.
 
 \begin{thebibliography}{00}
 	\bibitem{b1} https://en.wikipedia.org/wiki/Cache\_replacement\_policies [2023] Online.
 	\bibitem{b2} C. Ungureanu, B. Debnath, S. Rago, A. Aranya, "TBF: A Memory-Efficient Replacement Policy for Flash-based Caches" ,2013 IEEE 29th International Conference on Data Engineering (ICDE). 
 	\bibitem{b3} Z. Chen, N. Xiao, Member, IEEE, Y. Lu, F. Liu, Y. Ou, Me-CLOCK:A Memory-Efficient Framework to Implement Replacement Policies for Large Caches, IEEE Transactions on Computers ( Volume: 65, Issue: 8, 01 August 2016)
-	\bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
-	\bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
-	\bibitem{b6} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ``Electron spectroscopy studies on magneto-optical media and plastic substrate interface,'' IEEE Transl. J. Magn. Japan, vol. 2, pp. 740--741, August 1987 [Digests 9th Annual Conf. Magnetics Japan, p. 301, 1982].
-	\bibitem{b7} M. Young, The Technical Writer's Handbook. Mill Valley, CA: University Science, 1989.
+	\bibitem{b4} Daniel S. Berger, Ramesh K. Sitaraman+, Mor Harchol-Balter, Achieving high cache hit ratios for CDN memory caches with size-aware admission, CMU-CS-16-120
 \end{thebibliography}
-\vspace{12pt}
-\color{red}
-IEEE conference templates contain guidance text for composing and formatting conference papers. Please ensure that all template text is removed from your conference paper prior to submission to the conference. Failure to remove the template text from your paper may result in your paper not being published.
 
 \end{document}

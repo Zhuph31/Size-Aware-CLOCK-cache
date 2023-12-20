@@ -31,9 +31,7 @@ def read_data(file):
             type = res[0]
             iterations = res[1]
             cache_size = res[2]
-            alpha = res[3]
-            if float(alpha) > 0.2:
-                continue
+            alpha = float(res[3])
             miss = res[4]
             tc = res[5]
             mem = res[6]
@@ -74,10 +72,11 @@ def plot_val(iterations, cache_size, candidates, type):
     val = []
     categories = []
     label = ""
+    print(len(candidates))
 
     if type == "miss":
         label = "Miss Percent"
-        plt.ylim(20, 60)
+        plt.ylim(20, 70)
         plt.ylabel("Percentage")
     elif type == "mem":
         label = "Memory Usage"
@@ -88,12 +87,7 @@ def plot_val(iterations, cache_size, candidates, type):
         label = "Rejections"
 
     for candidate in candidates:
-        if candidate.type == "0":
-            categories.append("LRU")
-        elif candidate.type == "1":
-            categories.append("CLOCK")
-        else:
-            categories.append("SA-CLOCK")
+        categories.append(candidate.alpha)
         if type == "miss":
             val.append(float(candidate.miss))
         elif type == "mem":
@@ -111,17 +105,18 @@ def plot_val(iterations, cache_size, candidates, type):
     bar1 = np.arange(len(categories))
 
     plt.bar(bar1, val, color="blue", width=bar_width, bottom=0, align="center")
-    for i, value in enumerate(val):
-        plt.text(i, value + 0.5, str(value), ha="center", va="bottom")
+    # for i, value in enumerate(val):
+    #     plt.text(i, value + 0.5, str(value), ha="center", va="bottom")
     print(plt.ylim())
 
     plt.title(label)
     # plt.xlabel("Categories")
     plt.xticks([r for r in range(len(categories))], categories)
+    plt.xticks(rotation=45)
 
     # plt.legend()
     # plt.show()
-    plt.savefig("{}/{}-{}-{}".format(type, iterations, cache_size, type))
+    plt.savefig("alpha_pic/{}".format(type))
     plt.clf()
 
 
@@ -135,15 +130,15 @@ def plot_data(file):
             plot_val(iterations, cache_size, candidates, "rej")
 
 
-def plot_mem_record(file):
+def plot_multiple_curves(file):
     with open(file, "r") as file:
         data_lines = file.readlines()
 
     print(len(data_lines))
 
-    data1 = list(map(int, data_lines[0].split()))
-    data2 = list(map(int, data_lines[1].split()))
-    data3 = list(map(int, data_lines[2].split()))
+    data1 = list(map(float, data_lines[0].split()))
+    data2 = list(map(float, data_lines[1].split()))
+    data3 = list(map(float, data_lines[2].split()))
     print(len(data1))
     print(len(data2))
     print(len(data3))
@@ -155,13 +150,13 @@ def plot_mem_record(file):
     plt.plot(x_values, data2, label="CLOCK")
     plt.plot(x_values, data3, label="SA-CLOCK")
 
-    plt.title("Memory Usage Over Time")
+    plt.title("Miss Ratio Over Time")
     # plt.xlabel("Time")
-    plt.xticks([])
-    plt.ylabel("Memory Usage (bytes)")
+    # plt.xticks([])
+    plt.ylabel("Percentage")
 
     plt.legend()
-    plt.savefig("mem_records")
+    plt.savefig("fake_miss1")
 
 
 def plot_curve(file):
@@ -170,8 +165,7 @@ def plot_curve(file):
 
     print(len(data_lines))
 
-    data1 = list(map(int, data_lines[0].split()))
-    # data1 = data1[::1000]
+    data1 = list(map(float, data_lines[0].split()))
 
     print(len(data1))
 
@@ -180,20 +174,22 @@ def plot_curve(file):
 
     plt.plot(x_values, data1)
 
-    plt.title("Input SIze")
-    plt.ylabel("Object Size (bytes)")
+    plt.title("Input Size")
+    plt.ylabel("Object Size (Bytes)")
     # plt.xticks([])
 
     # plt.legend()
-    plt.savefig("fake_input2")
+    plt.savefig("fake_input1")
 
 
 if __name__ == "__main__":
-    # plot_data("perf1")
+    # plot_data("adapt2")
     # plot_data("perf2")
     # plot_data("perf3")
     # plot_data("perf4")
-    # plot_data("perf.1")
+    plot_data("alpha")
     # plot_mem_record("mem_records")
-    # plot_input_size("input_size")
-    plot_curve("fake2")
+    # plot_multiple_curves("miss_records")
+    # plot_multiple_curves("fake1_miss")
+    # plot_curve("fake1")
+    # plot_multiple_curves("")
