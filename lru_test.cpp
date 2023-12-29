@@ -261,6 +261,8 @@ int main(int argc, char *argv[]) {
   std::vector<double> alpha_options = {0.1};
   std::vector<size_t> lru_mem_records, clock_mem_records, sa_clock_mem_records;
 
+  printf("policy storage_size cache_size alpha cache_miss time_cost_ms "
+         "mem_usage_byte reject\n");
   for (uint64_t iterations : iteration_options) {
     for (uint64_t cache_size : cache_size_options) {
       printf("0 %lu %lu -1 %s\n", iterations, cache_size,
