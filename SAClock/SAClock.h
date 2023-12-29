@@ -5,8 +5,8 @@
  *      Author: tugrul
  */
 
-#ifndef MYCLOCKCACHE_H_
-#define MYCLOCKCACHE_H_
+#ifndef SACLOCKCACHE_H_
+#define SACLOCKCACHE_H_
 
 #include "../LruClockCache/LruClockCache.h"
 #include <algorithm>
@@ -45,9 +45,9 @@ private:
 
 template <typename LruKey, typename LruValue,
           typename ClockHandInteger = size_t>
-class MyClockCache : public LruClockCache<LruKey, LruValue> {
+class SAClockCache : public LruClockCache<LruKey, LruValue> {
 public:
-  MyClockCache(double alpha, ClockHandInteger numElements,
+  SAClockCache(double alpha, ClockHandInteger numElements,
                const std::function<LruValue(LruKey)> &readMiss,
                const std::function<void(LruKey, LruValue)> &writeMiss)
       : LruClockCache<LruKey, LruValue>(numElements, readMiss, writeMiss),
@@ -82,4 +82,4 @@ private:
   size_t last_rej_size_ = 0;
 };
 
-#endif /* MYCLOCKCACHE_H_ */
+#endif /* SACLOCKCACHE_H_ */
