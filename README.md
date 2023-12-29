@@ -11,3 +11,7 @@ This repo contain the source code for the above mentioned paper.
 
 ## BUILD
 The project is build with CMAKE. Running `./build.sh` can build this project.
+
+## RUN
+Running `./lru_cache` will output the experiment result for storage size 1,000,000, cache size 1,000, alpha 0.1.
+Policy 0 stands for LRU, 1 stands for CLOCK and 2 stands for SA-CLOCK.
