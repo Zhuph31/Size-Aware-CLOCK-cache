@@ -6,7 +6,7 @@
 #include <unordered_set>
 
 #include "LruClockCache/LruClockCache.h"
-#include "MyClock/MyClock.h"
+#include "SAClock/SAClock.h"
 #include "basic_lru/lrucache.hpp"
 #include "utils.h"
 
@@ -208,7 +208,7 @@ Metrics test_clock_lru(bool my, uint64_t iterations, uint64_t cache_size,
 
     return {miss, tc.get_elapsed(), mem_consume};
   } else {
-    MyClockCache<key_type, value_type> cache(alpha, cache_size, read_miss,
+    SAClockCache<key_type, value_type> cache(alpha, cache_size, read_miss,
                                              write_miss);
 
     TimeCost tc;
